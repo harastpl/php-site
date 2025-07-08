@@ -5,7 +5,7 @@ require_once '../../includes/auth.php';
 
 // Only allow admin access
 if (!isLoggedIn() || !isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {
-    redirect('login.php');
+    redirect('../../login.php');
 }
 
 // Get stats for dashboard

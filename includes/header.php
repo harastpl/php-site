@@ -62,9 +62,9 @@
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item"><a class="nav-link" href="index.php">Home</a></li>
                     <li class="nav-item"><a class="nav-link" href="custom-order.php">Custom Order</a></li>
-                    <?php if (isLoggedIn()): ?>
+                    <?php if (function_exists('isLoggedIn') && isLoggedIn()): ?>
                         <li class="nav-item"><a class="nav-link" href="orders.php">My Orders</a></li>
-                        <?php if (isAdmin()): ?>
+                        <?php if (function_exists('isAdmin') && isAdmin()): ?>
                             <li class="nav-item"><a class="nav-link" href="admin/">Admin Panel</a></li>
                         <?php endif; ?>
                         <li class="nav-item"><a class="nav-link" href="logout.php">Logout (<?php echo $_SESSION['username']; ?>)</a></li>
