@@ -3,15 +3,14 @@ require_once '../../includes/config.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/auth.php';
 
-// Only allow admin access
-if (!isLoggedIn() || !isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {
-    redirect('login.php');
-}
+requireAdmin();
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $name = trim($_POST['name']);
     $description = trim($_POST['description']);
     $price = trim($_POST['price']);
+    $stock = (int)$_POST['stock'];
+    $low_stock_threshold = (int)$_POST['low_stock_threshold'];
     $image = $_FILES['image'];
     
     $errors = [];
@@ -27,6 +26,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     
     if (!is_numeric($price) || $price <= 0) {
         $errors[] = 'Valid price is required';
+    }
+    
+    if ($stock < 0) {
+        $errors[] = 'Stock cannot be negative';
     }
     
     if ($image['error'] == UPLOAD_ERR_NO_FILE) {
@@ -61,11 +64,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             if (move_uploaded_file($image["tmp_name"], $target_file)) {
                 // Insert product into database
                 try {
-                    $stmt = $pdo->prepare("INSERT INTO products (name, description, price, image) VALUES (?, ?, ?, ?)");
-                    $stmt->execute([$name, $description, $price, $file_name]);
+                    $stmt = $pdo->prepare("INSERT INTO products (name, description, price, stock, low_stock_threshold, image) VALUES (?, ?, ?, ?, ?, ?)");
+                    $stmt->execute([$name, $description, $price, $stock, $low_stock_threshold, $file_name]);
                     
                     $_SESSION['success'] = 'Product added successfully!';
-                    redirect('products/');
+                    redirect('index.php');
                 } catch (PDOException $e) {
                     $errors[] = 'Database error: ' . $e->getMessage();
                 }
@@ -83,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Product | <?php echo SITE_NAME; ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="../../assets/css/admin.css" rel="stylesheet">
+    <link href="../../assets/css/styles.css" rel="stylesheet">
 </head>
 <body>
     <?php include '../includes/admin-header.php'; ?>
@@ -118,9 +121,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <textarea class="form-control" id="description" name="description" rows="5" required></textarea>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="price" class="form-label">Price</label>
-                        <input type="number" step="0.01" class="form-control" id="price" name="price" required>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="price" class="form-label">Price (₹)</label>
+                                <input type="number" step="0.01" class="form-control" id="price" name="price" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="stock" class="form-label">Stock Quantity</label>
+                                <input type="number" class="form-control" id="stock" name="stock" value="0" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="low_stock_threshold" class="form-label">Low Stock Alert Threshold</label>
+                                <input type="number" class="form-control" id="low_stock_threshold" name="low_stock_threshold" value="10" required>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="mb-3">

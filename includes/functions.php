@@ -23,35 +23,26 @@ function flash($name = '', $message = '', $class = 'alert alert-success') {
     }
 }
 
-// Check if user is logged in
-function isLoggedIn() {
-    return isset($_SESSION['user_id']);
-}
-
-// Get user data
-function getUserData($id) {
-    global $pdo;
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
-    $stmt->execute([$id]);
-    return $stmt->fetch(PDO::FETCH_ASSOC);
-}
-
-// Upload STL file
-function uploadSTLFile($file) {
+// Upload file function for multiple formats
+function uploadFile($file, $allowedTypes = ['stl', '3mf', 'obj', 'stp', 'step']) {
     $target_dir = STL_UPLOAD_DIR;
     $file_name = time() . '_' . basename($file["name"]);
     $target_file = $target_dir . $file_name;
-    $uploadOk = 1;
     $fileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
 
-    // Check if file is a valid STL
-    if (!in_array($file["type"], ALLOWED_STL_TYPES) || $fileType != "stl") {
-        return ['success' => false, 'message' => 'Sorry, only STL files are allowed.'];
+    // Check if file type is allowed
+    if (!in_array($fileType, $allowedTypes)) {
+        return ['success' => false, 'message' => 'Sorry, only ' . implode(', ', $allowedTypes) . ' files are allowed.'];
     }
 
     // Check file size
     if ($file["size"] > MAX_FILE_SIZE) {
-        return ['success' => false, 'message' => 'Sorry, your file is too large.'];
+        return ['success' => false, 'message' => 'Sorry, your file is too large. Maximum size is ' . (MAX_FILE_SIZE / 1024 / 1024) . 'MB.'];
+    }
+
+    // Create directory if it doesn't exist
+    if (!file_exists($target_dir)) {
+        mkdir($target_dir, 0755, true);
     }
 
     // Try to upload file
@@ -62,10 +53,14 @@ function uploadSTLFile($file) {
     }
 }
 
-// Get all products
-function getProducts($limit = null) {
+// Get all products with stock info
+function getProducts($limit = null, $checkStock = false) {
     global $pdo;
     $sql = "SELECT * FROM products";
+    if ($checkStock) {
+        $sql .= " WHERE stock > 0";
+    }
+    $sql .= " ORDER BY created_at DESC";
     if ($limit) {
         $sql .= " LIMIT " . (int)$limit;
     }
@@ -79,5 +74,71 @@ function getProduct($id) {
     $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ?");
     $stmt->execute([$id]);
     return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+// Get all colors
+function getColors() {
+    global $pdo;
+    $stmt = $pdo->query("SELECT * FROM colors WHERE is_active = 1 ORDER BY name");
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Get all materials
+function getMaterials() {
+    global $pdo;
+    $stmt = $pdo->query("SELECT * FROM materials WHERE is_active = 1 ORDER BY name");
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Get bulk discounts
+function getBulkDiscounts() {
+    global $pdo;
+    $stmt = $pdo->query("SELECT * FROM bulk_discounts WHERE is_active = 1 ORDER BY min_quantity");
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Calculate bulk discount
+function calculateBulkDiscount($quantity, $total) {
+    $discounts = getBulkDiscounts();
+    $discountPercentage = 0;
+    
+    foreach ($discounts as $discount) {
+        if ($quantity >= $discount['min_quantity']) {
+            $discountPercentage = $discount['discount_percentage'];
+        }
+    }
+    
+    $discountAmount = ($total * $discountPercentage) / 100;
+    return [
+        'percentage' => $discountPercentage,
+        'amount' => $discountAmount,
+        'final_total' => $total - $discountAmount
+    ];
+}
+
+// Check low stock products
+function getLowStockProducts() {
+    global $pdo;
+    $stmt = $pdo->query("SELECT * FROM products WHERE stock <= low_stock_threshold ORDER BY stock ASC");
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Format currency
+function formatCurrency($amount) {
+    return '₹' . number_format($amount, 2);
+}
+
+// Generate order ID
+function generateOrderId() {
+    return 'ORD' . time() . rand(100, 999);
+}
+
+// Send email notification
+function sendEmailNotification($to, $subject, $message) {
+    $headers = "From: " . ADMIN_EMAIL . "\r\n";
+    $headers .= "Reply-To: " . ADMIN_EMAIL . "\r\n";
+    $headers .= "X-Mailer: PHP/" . phpversion();
+    
+    return mail($to, $subject, $message, $headers);
 }
 ?>

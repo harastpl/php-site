@@ -11,19 +11,40 @@
     <!-- Astrospace Font -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
-    <link href="assets/css/style.css" rel="stylesheet">
+    <link href="assets/css/styles.css" rel="stylesheet">
     <style>
         body {
             font-family: 'Orbitron', sans-serif;
-            background-color: #0f0f1a;
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
             color: #e0e0ff;
+            min-height: 100vh;
         }
         .navbar {
             background-color: #1a1a2e !important;
+            border-bottom: 1px solid rgba(167, 139, 250, 0.2);
+        }
+        .navbar-brand {
+            color: #a78bfa !important;
+            font-weight: 700;
+            text-shadow: 0 0 10px rgba(167, 139, 250, 0.5);
+        }
+        .nav-link {
+            color: #e0e0ff !important;
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover {
+            color: #a78bfa !important;
+            text-shadow: 0 0 5px rgba(167, 139, 250, 0.5);
         }
         .btn-primary {
-            background-color: #4e2a84;
-            border-color: #6a3d9e;
+            background-color: #6d28d9;
+            border-color: #6d28d9;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #8b5cf6;
+            border-color: #8b5cf6;
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
         }
     </style>
 </head>
@@ -41,7 +62,16 @@
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item"><a class="nav-link" href="index.php">Home</a></li>
                     <li class="nav-item"><a class="nav-link" href="custom-order.php">Custom Order</a></li>
-                    <li class="nav-item"><a class="nav-link" href="login.php">Login</a></li>
+                    <?php if (isLoggedIn()): ?>
+                        <li class="nav-item"><a class="nav-link" href="orders.php">My Orders</a></li>
+                        <?php if (isAdmin()): ?>
+                            <li class="nav-item"><a class="nav-link" href="admin/">Admin Panel</a></li>
+                        <?php endif; ?>
+                        <li class="nav-item"><a class="nav-link" href="logout.php">Logout (<?php echo $_SESSION['username']; ?>)</a></li>
+                    <?php else: ?>
+                        <li class="nav-item"><a class="nav-link" href="login.php">Login</a></li>
+                        <li class="nav-item"><a class="nav-link" href="register.php">Register</a></li>
+                    <?php endif; ?>
                 </ul>
             </div>
         </div>
