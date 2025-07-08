@@ -1,0 +1,41 @@
+/* Main styles */
+h1, h2, h3, h4, h5, h6 {
+    color: #a78bfa;
+    text-shadow: 0 0 5px rgba(167, 139, 250, 0.5);
+}
+
+a {
+    color: #8b5cf6;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+a:hover {
+    color: #c4b5fd;
+    text-shadow: 0 0 5px rgba(196, 181, 253, 0.5);
+}
+
+.btn-primary {
+    background-color: #6d28d9;
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background-color: #8b5cf6;
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+}
+
+/* Glow effect for important elements */
+.glow {
+    animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+    from {
+        text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #8b5cf6, 0 0 20px #8b5cf6;
+    }
+    to {
+        text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #a78bfa, 0 0 40px #a78bfa;
+    }
+}
