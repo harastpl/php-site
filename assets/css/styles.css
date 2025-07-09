@@ -8,7 +8,7 @@ body {
 
 h1, h2, h3, h4, h5, h6 {
     color: #a78bfa;
-    text-shadow: 0 0 5px rgba(167, 139, 250, 0.5);
+    text-shadow: none;
 }
 
 a {
@@ -43,19 +43,7 @@ a:hover {
     border-color: #6d28d9;
 }
 
-/* Glow effect for important elements */
-.glow {
-    animation: glow 2s ease-in-out infinite alternate;
-}
 
-@keyframes glow {
-    from {
-        text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #8b5cf6, 0 0 20px #8b5cf6;
-    }
-    to {
-        text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #a78bfa, 0 0 40px #a78bfa;
-    }
-}
 
 /* Card styles */
 .card {
@@ -357,9 +345,6 @@ a:hover {
 }
 
 /* Utility classes */
-.text-glow {
-    text-shadow: 0 0 10px rgba(167, 139, 250, 0.8);
-}
 
 .border-glow {
     border: 1px solid rgba(167, 139, 250, 0.5);
