@@ -212,8 +212,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="layer_height" class="form-label">Layer Height (mm)</label>
-                                    <input type="number" class="form-control" id="layer_height" name="layer_height" 
-                                           min="0.08" max="2.4" step="0.01" value="0.2" required>
+                                    <select class="form-select" id="layer_height" name="layer_height" required>
+                                        <option value="0.08">0.08mm (Ultra Fine)</option>
+                                        <option value="0.12">0.12mm (Fine)</option>
+                                        <option value="0.16">0.16mm (Good)</option>
+                                        <option value="0.2" selected>0.2mm (Recommended)</option>
+                                        <option value="0.24">0.24mm (Fast)</option>
+                                        <option value="0.28">0.28mm (Draft)</option>
+                                    </select>
                                     <div class="form-text">Recommended: 0.2mm (Lower = better quality, slower print)</div>
                                 </div>
                             </div>
@@ -240,12 +246,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <option value="">Select Material</option>
                                 <?php foreach ($materials as $material): ?>
                                     <option value="<?php echo $material['id']; ?>" 
-                                            data-multiplier="<?php echo $material['price_multiplier']; ?>">
+                                            <?php echo (strtolower($material['name']) == 'pla') ? 'selected' : ''; ?>>
                                         <?php echo htmlspecialchars($material['name']); ?> 
                                         (<?php echo htmlspecialchars($material['description']); ?>)
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                            <div class="form-text">PLA is recommended for beginners</div>
                         </div>
                         
                         <div class="mb-3">
