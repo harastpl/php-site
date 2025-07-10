@@ -2,7 +2,7 @@
     <div class="position-sticky pt-3">
         <ul class="nav flex-column">
             <li class="nav-item">
-                <a class="nav-link" href="../admin/">
+                <a class="nav-link" href="./">
                     Dashboard
                 </a>
             </li>
