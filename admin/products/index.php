@@ -1,7 +1,7 @@
 <?php
-require_once '../../includes/config.php';
-require_once '../../includes/functions.php';
-require_once '../../includes/auth.php';
+require_once '../includes/config.php';
+require_once '../includes/functions.php';
+require_once '../includes/auth.php';
 
 requireAdmin();
 
@@ -42,14 +42,14 @@ $lowStockProducts = getLowStockProducts();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Products | <?php echo SITE_NAME; ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="../../assets/css/styles.css" rel="stylesheet">
+    <link href="../assets/css/styles.css" rel="stylesheet">
 </head>
 <body>
-    <?php include '../includes/admin-header.php'; ?>
+    <?php include 'includes/admin-header.php'; ?>
 
     <div class="container-fluid">
         <div class="row">
-            <?php include '../includes/admin-sidebar.php'; ?>
+            <?php include 'includes/admin-sidebar.php'; ?>
 
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
@@ -94,7 +94,7 @@ $lowStockProducts = getLowStockProducts();
                             <tr>
                                 <td><?php echo $product['id']; ?></td>
                                 <td>
-                                    <img src="../../uploads/products/<?php echo $product['image']; ?>" 
+                                    <img src="../uploads/products/<?php echo $product['image']; ?>" 
                                          alt="<?php echo htmlspecialchars($product['name']); ?>" 
                                          style="width: 50px; height: 50px; object-fit: cover;">
                                 </td>

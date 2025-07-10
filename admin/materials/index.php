@@ -1,7 +1,7 @@
 <?php
-require_once '../../includes/config.php';
-require_once '../../includes/functions.php';
-require_once '../../includes/auth.php';
+require_once '../includes/config.php';
+require_once '../includes/functions.php';
+require_once '../includes/auth.php';
 
 requireAdmin();
 
@@ -9,11 +9,10 @@ requireAdmin();
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_material'])) {
     $name = trim($_POST['name']);
     $description = trim($_POST['description']);
-    $price_multiplier = (float)$_POST['price_multiplier'];
     
-    if (!empty($name) && $price_multiplier > 0) {
-        $stmt = $pdo->prepare("INSERT INTO materials (name, description, price_multiplier) VALUES (?, ?, ?)");
-        $stmt->execute([$name, $description, $price_multiplier]);
+    if (!empty($name)) {
+        $stmt = $pdo->prepare("INSERT INTO materials (name, description) VALUES (?, ?)");
+        $stmt->execute([$name, $description]);
         $_SESSION['success'] = 'Material added successfully!';
     }
     redirect('index.php');
@@ -48,14 +47,14 @@ $materials = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Materials | <?php echo SITE_NAME; ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="../../assets/css/styles.css" rel="stylesheet">
+    <link href="../assets/css/styles.css" rel="stylesheet">
 </head>
 <body>
-    <?php include '../includes/admin-header.php'; ?>
+    <?php include 'includes/admin-header.php'; ?>
 
     <div class="container-fluid">
         <div class="row">
-            <?php include '../includes/admin-sidebar.php'; ?>
+            <?php include 'includes/admin-sidebar.php'; ?>
 
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
@@ -83,12 +82,7 @@ $materials = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <label for="description" class="form-label">Description</label>
                                 <input type="text" class="form-control" id="description" name="description">
                             </div>
-                            <div class="col-md-3">
-                                <label for="price_multiplier" class="form-label">Price Multiplier</label>
-                                <input type="number" step="0.01" class="form-control" id="price_multiplier" name="price_multiplier" value="1.00" required>
-                                <div class="form-text">1.00 = base price, 1.20 = 20% increase</div>
-                            </div>
-                            <div class="col-md-2">
+                            <div class="col-md-4">
                                 <label class="form-label">&nbsp;</label>
                                 <button type="submit" name="add_material" class="btn btn-primary d-block">Add Material</button>
                             </div>
@@ -104,7 +98,6 @@ $materials = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <th>ID</th>
                                 <th>Name</th>
                                 <th>Description</th>
-                                <th>Price Multiplier</th>
                                 <th>Status</th>
                                 <th>Created</th>
                                 <th>Actions</th>
@@ -116,15 +109,6 @@ $materials = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <td><?php echo $material['id']; ?></td>
                                 <td><?php echo htmlspecialchars($material['name']); ?></td>
                                 <td><?php echo htmlspecialchars($material['description']); ?></td>
-                                <td>
-                                    <?php echo $material['price_multiplier']; ?>x
-                                    <?php if ($material['price_multiplier'] != 1.0): ?>
-                                        <small class="text-muted">
-                                            (<?php echo number_format(($material['price_multiplier'] - 1) * 100); ?>% 
-                                            <?php echo $material['price_multiplier'] > 1 ? 'increase' : 'decrease'; ?>)
-                                        </small>
-                                    <?php endif; ?>
-                                </td>
                                 <td>
                                     <span class="badge bg-<?php echo $material['is_active'] ? 'success' : 'secondary'; ?>">
                                         <?php echo $material['is_active'] ? 'Active' : 'Inactive'; ?>

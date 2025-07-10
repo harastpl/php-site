@@ -243,9 +243,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                             data-multiplier="<?php echo $material['price_multiplier']; ?>">
                                         <?php echo htmlspecialchars($material['name']); ?> 
                                         (<?php echo htmlspecialchars($material['description']); ?>)
-                                        <?php if ($material['price_multiplier'] != 1.0): ?>
-                                            - <?php echo number_format(($material['price_multiplier'] - 1) * 100); ?>% price increase
-                                        <?php endif; ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>

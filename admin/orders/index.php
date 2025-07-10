@@ -1,7 +1,7 @@
 <?php
-require_once '../../includes/config.php';
-require_once '../../includes/functions.php';
-require_once '../../includes/auth.php';
+require_once '../includes/config.php';
+require_once '../includes/functions.php';
+require_once '../includes/auth.php';
 
 requireAdmin();
 
@@ -40,14 +40,14 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Orders | <?php echo SITE_NAME; ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="../../assets/css/styles.css" rel="stylesheet">
+    <link href="../assets/css/styles.css" rel="stylesheet">
 </head>
 <body>
-    <?php include '../includes/admin-header.php'; ?>
+    <?php include 'includes/admin-header.php'; ?>
 
     <div class="container-fluid">
         <div class="row">
-            <?php include '../includes/admin-sidebar.php'; ?>
+            <?php include 'includes/admin-sidebar.php'; ?>
 
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
@@ -130,7 +130,7 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <td><?php echo date('M j, Y', strtotime($order['created_at'])); ?></td>
                                 <td>
                                     <?php if ($order['custom_stl']): ?>
-                                        <a href="../../uploads/stl_files/<?php echo $order['custom_stl']; ?>" 
+                                        <a href="../uploads/stl_files/<?php echo $order['custom_stl']; ?>" 
                                            class="btn btn-sm btn-outline-primary" download>Download</a><br>
                                     <?php endif; ?>
                                     

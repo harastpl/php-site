@@ -15,40 +15,16 @@
     <style>
         body {
             font-family: 'Orbitron', sans-serif;
-            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
-            color: #e0e0ff;
             min-height: 100vh;
-        }
-        .navbar {
-            background-color: #1a1a2e !important;
-            border-bottom: 1px solid rgba(167, 139, 250, 0.2);
-        }
-        .navbar-brand {
-            color: #a78bfa !important;
-            font-weight: 700;
-            text-shadow: 0 0 10px rgba(167, 139, 250, 0.5);
-        }
-        .nav-link {
-            color: #e0e0ff !important;
-            transition: all 0.3s ease;
-        }
-        .nav-link:hover {
-            color: #a78bfa !important;
-            text-shadow: 0 0 5px rgba(167, 139, 250, 0.5);
-        }
-        .btn-primary {
-            background-color: #6d28d9;
-            border-color: #6d28d9;
-            transition: all 0.3s ease;
-        }
-        .btn-primary:hover {
-            background-color: #8b5cf6;
-            border-color: #8b5cf6;
-            box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
         }
     </style>
 </head>
 <body>
+    <!-- Theme Toggle Button -->
+    <div class="theme-toggle" onclick="toggleTheme()">
+        🌓 Toggle Theme
+    </div>
+    
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
             <a class="navbar-brand" href="index.php">
@@ -77,3 +53,19 @@
         </div>
     </nav>
     <div class="container mt-4">
+    
+    <script>
+        // Theme toggle functionality
+        function toggleTheme() {
+            document.body.classList.toggle('light-theme');
+            localStorage.setItem('theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
+        }
+        
+        // Load saved theme
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-theme');
+            }
+        });
+    </script>
