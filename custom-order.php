@@ -45,13 +45,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 // Calculate estimated price (this would be refined based on actual file analysis)
                 $basePrice = SETUP_FEE + (BASE_PRICE_PER_GRAM * 50 * $quantity); // Assuming 50g average
                 
-                // Apply material multiplier
-                $stmt = $pdo->prepare("SELECT price_multiplier FROM materials WHERE id = ?");
-                $stmt->execute([$material_id]);
-                $material = $stmt->fetch();
-                $materialMultiplier = $material ? $material['price_multiplier'] : 1.0;
-                
-                $totalPrice = $basePrice * $materialMultiplier;
+                // Use base price (no material multiplier)
+                $totalPrice = $basePrice;
                 
                 // Apply bulk discount
                 $discount = calculateBulkDiscount($quantity, $totalPrice);
@@ -263,7 +258,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         <input type="radio" name="color_id" value="<?php echo $color['id']; ?>" 
                                                style="display: none;" required>
                                         <div class="color-option" 
-                                             style="background-color: <?php echo $color['hex_code']; ?>"
+                                             style="background-color: #<?php echo $color['hex_code']; ?>"
                                              title="<?php echo htmlspecialchars($color['name']); ?>"
                                              onclick="selectColor(this)"></div>
                                     </label>

@@ -1,7 +1,7 @@
 <?php
 // Site Configuration
 define('SITE_NAME', 'Volt3dge: Precision in Every Layer');
-define('SITE_URL', 'https://volt3dge.com');
+define('SITE_URL', 'http://localhost/3d-site');
 define('ADMIN_EMAIL', 'jayant@volt3dge.com');
 
 // File Upload Settings
@@ -14,11 +14,11 @@ define('PRODUCT_IMAGE_DIR', __DIR__ . '/../uploads/products/');
 define('PHONEPE_MERCHANT_ID', 'YOUR_MERCHANT_ID');
 define('PHONEPE_SALT_KEY', 'YOUR_SALT_KEY');
 define('PHONEPE_SALT_INDEX', 1);
-define('PHONEPE_BASE_URL', 'https://api-preprod.phonepe.com/apis/pg-sandbox'); // Use production URL for live
+define('PHONEPE_BASE_URL', 'https://api-preprod.phonepe.com/apis/pg-sandbox');
 
 // Pricing Configuration
-define('BASE_PRICE_PER_GRAM', 2.50); // Base price per gram
-define('SETUP_FEE', 50.00); // One-time setup fee per order
+define('BASE_PRICE_PER_GRAM', 2.50);
+define('SETUP_FEE', 50.00);
 
 // Display Errors (set to 0 in production)
 ini_set('display_errors', 1);

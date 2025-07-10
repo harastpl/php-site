@@ -110,7 +110,7 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <?php endif; ?>
                                 <?php if ($order['color_name']): ?>
                                     <p><strong>Color:</strong> 
-                                        <span class="color-preview" style="background-color: <?php echo $order['hex_code']; ?>"></span>
+                                        <span class="color-preview" style="background-color: #<?php echo $order['hex_code']; ?>"></span>
                                         <?php echo htmlspecialchars($order['color_name']); ?>
                                     </p>
                                 <?php endif; ?>

@@ -1,7 +1,7 @@
 <?php
-require_once '../includes/config.php';
-require_once '../includes/functions.php';
-require_once '../includes/auth.php';
+require_once '../../includes/config.php';
+require_once '../../includes/functions.php';
+require_once '../../includes/auth.php';
 
 requireAdmin();
 
@@ -47,14 +47,14 @@ $materials = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Materials | <?php echo SITE_NAME; ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="../assets/css/styles.css" rel="stylesheet">
+    <link href="../../assets/css/styles.css" rel="stylesheet">
 </head>
 <body>
-    <?php include 'includes/admin-header.php'; ?>
+    <?php include '../includes/admin-header.php'; ?>
 
     <div class="container-fluid">
         <div class="row">
-            <?php include 'includes/admin-sidebar.php'; ?>
+            <?php include '../includes/admin-sidebar.php'; ?>
 
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
@@ -74,15 +74,17 @@ $materials = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     </div>
                     <div class="card-body">
                         <form method="post" class="row g-3">
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <label for="name" class="form-label">Material Name</label>
                                 <input type="text" class="form-control" id="name" name="name" required>
+                                <div class="form-text">e.g., PLA (Recommended), ABS, PETG, TPU</div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <label for="description" class="form-label">Description</label>
                                 <input type="text" class="form-control" id="description" name="description">
+                                <div class="form-text">Brief description of material properties</div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-2">
                                 <label class="form-label">&nbsp;</label>
                                 <button type="submit" name="add_material" class="btn btn-primary d-block">Add Material</button>
                             </div>
@@ -99,7 +101,6 @@ $materials = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <th>Name</th>
                                 <th>Description</th>
                                 <th>Status</th>
-                                <th>Created</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -107,14 +108,18 @@ $materials = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <?php foreach ($materials as $material): ?>
                             <tr>
                                 <td><?php echo $material['id']; ?></td>
-                                <td><?php echo htmlspecialchars($material['name']); ?></td>
+                                <td>
+                                    <?php echo htmlspecialchars($material['name']); ?>
+                                    <?php if (stripos($material['name'], 'pla') !== false): ?>
+                                        <span class="badge bg-info">Recommended</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td><?php echo htmlspecialchars($material['description']); ?></td>
                                 <td>
                                     <span class="badge bg-<?php echo $material['is_active'] ? 'success' : 'secondary'; ?>">
                                         <?php echo $material['is_active'] ? 'Active' : 'Inactive'; ?>
                                     </span>
                                 </td>
-                                <td><?php echo date('M j, Y', strtotime($material['created_at'])); ?></td>
                                 <td>
                                     <a href="index.php?toggle=<?php echo $material['id']; ?>" 
                                        class="btn btn-sm btn-<?php echo $material['is_active'] ? 'warning' : 'success'; ?>">
