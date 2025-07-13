@@ -3,7 +3,7 @@ require_once 'includes/config.php';
 require_once 'includes/functions.php';
 require_once 'includes/auth.php';
 
-$products = getProducts(6); // Get 6 featured products
+$products = getFeaturedProducts(6); // Get 6 featured products
 ?>
 <!DOCTYPE html>
 <html lang="en">

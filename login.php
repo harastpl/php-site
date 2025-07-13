@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 redirect('index.php');
             }
         } else {
-            $error = 'Invalid email or password';
+            $error = 'Incorrect username or password';
         }
     }
 }

@@ -64,8 +64,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             if (move_uploaded_file($image["tmp_name"], $target_file)) {
                 // Insert product into database
                 try {
-                    $stmt = $pdo->prepare("INSERT INTO products (name, description, price, stock, low_stock_threshold, image) VALUES (?, ?, ?, ?, ?, ?)");
-                    $stmt->execute([$name, $description, $price, $stock, $low_stock_threshold, $file_name]);
+                    $is_featured = (int)$_POST['is_featured'];
+                    $stmt = $pdo->prepare("INSERT INTO products (name, description, price, stock, low_stock_threshold, image, is_featured) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                    $stmt->execute([$name, $description, $price, $stock, $low_stock_threshold, $file_name, $is_featured]);
                     
                     $_SESSION['success'] = 'Product added successfully!';
                     redirect('index.php');
@@ -138,6 +139,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <div class="mb-3">
                                 <label for="low_stock_threshold" class="form-label">Low Stock Alert Threshold</label>
                                 <input type="number" class="form-control" id="low_stock_threshold" name="low_stock_threshold" value="10" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="is_featured" class="form-label">Featured Product</label>
+                                <select class="form-select" id="is_featured" name="is_featured">
+                                    <option value="0">No</option>
+                                    <option value="1">Yes</option>
+                                </select>
+                                <div class="form-text">Featured products appear on the home page</div>
                             </div>
                         </div>
                     </div>

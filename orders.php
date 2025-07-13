@@ -65,6 +65,45 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <h2 class="glow">My Orders</h2>
             <a href="custom-order.php" class="btn btn-primary">New Custom Order</a>
         </div>
+        
+        <!-- Address Section -->
+        <div class="address-section mb-4">
+            <h5>Delivery Address</h5>
+            <?php 
+            $stmt = $pdo->prepare("SELECT address FROM users WHERE id = ?");
+            $stmt->execute([$_SESSION['user_id']]);
+            $user = $stmt->fetch();
+            ?>
+            <?php if (empty($user['address'])): ?>
+                <button class="add-address-btn" onclick="showAddressForm()">
+                    <i class="fas fa-plus"></i> Add Address
+                </button>
+                <div id="address-form" style="display: none;" class="mt-3">
+                    <form method="post" action="update-address.php">
+                        <textarea class="form-control" name="address" rows="3" placeholder="Enter your delivery address" required></textarea>
+                        <div class="mt-2">
+                            <button type="submit" class="btn btn-primary btn-sm">Save Address</button>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="hideAddressForm()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            <?php else: ?>
+                <div class="current-address">
+                    <p><strong>Current Address:</strong></p>
+                    <p><?php echo nl2br(htmlspecialchars($user['address'])); ?></p>
+                    <button class="btn btn-outline-primary btn-sm" onclick="showAddressForm()">Change Address</button>
+                </div>
+                <div id="address-form" style="display: none;" class="mt-3">
+                    <form method="post" action="update-address.php">
+                        <textarea class="form-control" name="address" rows="3" required><?php echo htmlspecialchars($user['address']); ?></textarea>
+                        <div class="mt-2">
+                            <button type="submit" class="btn btn-primary btn-sm">Update Address</button>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="hideAddressForm()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            <?php endif; ?>
+        </div>
 
         <?php if (isset($_SESSION['success'])): ?>
             <div class="alert alert-success">
@@ -110,7 +149,7 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <?php endif; ?>
                                 <?php if ($order['color_name']): ?>
                                     <p><strong>Color:</strong> 
-                                        <span class="color-preview" style="background-color: #<?php echo $order['hex_code']; ?>"></span>
+                                        <span class="color-preview" style="background-color: <?php echo $order['hex_code']; ?>"></span>
                                         <?php echo htmlspecialchars($order['color_name']); ?>
                                     </p>
                                 <?php endif; ?>
@@ -153,10 +192,14 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             </div>
                         <?php endif; ?>
                         
-                        <?php if ($order['payment_status'] == 'pending' && $order['status'] != 'cancelled'): ?>
+                        <?php if ($order['payment_status'] == 'pending' && $order['status'] == 'processing' && $order['admin_price'] > 0): ?>
                             <div class="mt-3">
                                 <a href="payment.php?order_id=<?php echo $order['id']; ?>" 
                                    class="btn btn-success">Pay Now</a>
+                            </div>
+                        <?php elseif ($order['status'] == 'pending'): ?>
+                            <div class="mt-3">
+                                <span class="badge bg-info">Waiting for admin pricing</span>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -166,5 +209,15 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
     </main>
 
     <?php include 'includes/footer.php'; ?>
+    
+    <script>
+        function showAddressForm() {
+            document.getElementById('address-form').style.display = 'block';
+        }
+        
+        function hideAddressForm() {
+            document.getElementById('address-form').style.display = 'none';
+        }
+    </script>
 </body>
 </html>

@@ -8,27 +8,16 @@
     <link rel="icon" href="assets/images/favicon.ico" type="image/x-icon">
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Astrospace Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Roboto Serif Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Serif:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
     <link href="assets/css/styles.css" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Orbitron', sans-serif;
-            min-height: 100vh;
-        }
-    </style>
 </head>
 <body>
-    <!-- Theme Toggle Button -->
-    <div class="theme-toggle" onclick="toggleTheme()">
-        🌓 Toggle Theme
-    </div>
-    
-    <nav class="navbar navbar-expand-lg navbar-dark">
+    <nav class="navbar navbar-expand-lg">
         <div class="container">
             <a class="navbar-brand" href="index.php">
-                <img src="assets/images/logo.png" alt="Logo" height="40" class="d-inline-block align-top me-2">
+                <img src="assets/images/logo.png" alt="Logo" height="40" class="d-inline-block align-top">
                 <?php echo defined('SITE_NAME') ? SITE_NAME : '3D Print Shop'; ?>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -37,9 +26,11 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item"><a class="nav-link" href="index.php">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="products.php">Products</a></li>
                     <li class="nav-item"><a class="nav-link" href="custom-order.php">Custom Order</a></li>
                     <?php if (function_exists('isLoggedIn') && isLoggedIn()): ?>
                         <li class="nav-item"><a class="nav-link" href="orders.php">My Orders</a></li>
+                        <li class="nav-item"><a class="nav-link" href="cart.php">Cart</a></li>
                         <?php if (function_exists('isAdmin') && isAdmin()): ?>
                             <li class="nav-item"><a class="nav-link" href="admin/">Admin Panel</a></li>
                         <?php endif; ?>
@@ -53,19 +44,3 @@
         </div>
     </nav>
     <div class="container mt-4">
-    
-    <script>
-        // Theme toggle functionality
-        function toggleTheme() {
-            document.body.classList.toggle('light-theme');
-            localStorage.setItem('theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
-        }
-        
-        // Load saved theme
-        document.addEventListener('DOMContentLoaded', function() {
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'light') {
-                document.body.classList.add('light-theme');
-            }
-        });
-    </script>

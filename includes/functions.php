@@ -54,11 +54,18 @@ function uploadFile($file, $allowedTypes = ['stl', '3mf', 'obj', 'stp', 'step'])
 }
 
 // Get all products with stock info
-function getProducts($limit = null, $checkStock = false) {
+function getProducts($limit = null, $checkStock = false, $featuredOnly = false) {
     global $pdo;
     $sql = "SELECT * FROM products";
+    $conditions = [];
     if ($checkStock) {
-        $sql .= " WHERE stock > 0";
+        $conditions[] = "stock > 0";
+    }
+    if ($featuredOnly) {
+        $conditions[] = "is_featured = 1";
+    }
+    if (!empty($conditions)) {
+        $sql .= " WHERE " . implode(" AND ", $conditions);
     }
     $sql .= " ORDER BY created_at DESC";
     if ($limit) {
@@ -66,6 +73,11 @@ function getProducts($limit = null, $checkStock = false) {
     }
     $stmt = $pdo->query($sql);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Get featured products only
+function getFeaturedProducts($limit = null) {
+    return getProducts($limit, false, true);
 }
 
 // Get single product

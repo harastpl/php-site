@@ -9,9 +9,15 @@ requireAdmin();
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
     $order_id = (int)$_POST['order_id'];
     $status = $_POST['status'];
+    $admin_price = isset($_POST['admin_price']) ? (float)$_POST['admin_price'] : 0;
     
-    $stmt = $pdo->prepare("UPDATE orders SET status = ? WHERE id = ?");
-    $stmt->execute([$status, $order_id]);
+    if ($status == 'processing' && $admin_price > 0) {
+        $stmt = $pdo->prepare("UPDATE orders SET status = ?, admin_price = ?, final_total = ? WHERE id = ?");
+        $stmt->execute([$status, $admin_price, $admin_price, $order_id]);
+    } else {
+        $stmt = $pdo->prepare("UPDATE orders SET status = ? WHERE id = ?");
+        $stmt->execute([$status, $order_id]);
+    }
     
     $_SESSION['success'] = 'Order status updated successfully!';
     redirect('index.php');
@@ -19,10 +25,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
 
 // Get all orders
 $stmt = $pdo->query("
-    SELECT o.*, u.username, u.email,
+    SELECT o.*, u.username, u.email, u.address,
            oi.custom_stl, oi.custom_notes, oi.infill_percentage, oi.layer_height, 
            oi.support_needed, oi.quantity,
-           c.name as color_name, c.hex_code,
+           c.name as color_name, CONCAT('#', c.hex_code) as hex_code,
            m.name as material_name
     FROM orders o
     LEFT JOIN users u ON o.user_id = u.id
@@ -134,15 +140,19 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                            class="btn btn-sm btn-outline-primary" download>Download</a><br>
                                     <?php endif; ?>
                                     
-                                    <form method="post" class="d-inline">
+                                    <form method="post" class="mt-2">
                                         <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
-                                        <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                                        <select name="status" class="form-select form-select-sm mb-2" onchange="togglePriceInput(this)">
                                             <option value="pending" <?php echo $order['status'] == 'pending' ? 'selected' : ''; ?>>Pending</option>
                                             <option value="processing" <?php echo $order['status'] == 'processing' ? 'selected' : ''; ?>>Processing</option>
                                             <option value="completed" <?php echo $order['status'] == 'completed' ? 'selected' : ''; ?>>Completed</option>
                                             <option value="cancelled" <?php echo $order['status'] == 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
                                         </select>
-                                        <input type="hidden" name="update_status" value="1">
+                                        <div class="price-input" style="display: none;">
+                                            <input type="number" step="0.01" name="admin_price" class="form-control form-control-sm mb-2" 
+                                                   placeholder="Enter final price" value="<?php echo $order['admin_price'] ?? ''; ?>">
+                                        </div>
+                                        <button type="submit" name="update_status" class="btn btn-sm btn-primary">Update</button>
                                     </form>
                                 </td>
                             </tr>
@@ -155,5 +165,24 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function togglePriceInput(select) {
+            const priceInput = select.parentElement.querySelector('.price-input');
+            if (select.value === 'processing') {
+                priceInput.style.display = 'block';
+                priceInput.querySelector('input').required = true;
+            } else {
+                priceInput.style.display = 'none';
+                priceInput.querySelector('input').required = false;
+            }
+        }
+        
+        // Initialize price inputs on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('select[name="status"]').forEach(function(select) {
+                togglePriceInput(select);
+            });
+        });
+    </script>
 </body>
 </html>

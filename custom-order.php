@@ -45,7 +45,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 // Calculate estimated price (this would be refined based on actual file analysis)
                 $basePrice = SETUP_FEE + (BASE_PRICE_PER_GRAM * 50 * $quantity); // Assuming 50g average
                 
-                // Use base price (no material multiplier)
                 $totalPrice = $basePrice;
                 
                 // Apply bulk discount
@@ -258,7 +257,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         <input type="radio" name="color_id" value="<?php echo $color['id']; ?>" 
                                                style="display: none;" required>
                                         <div class="color-option" 
-                                             style="background-color: #<?php echo $color['hex_code']; ?>"
+                                             style="background-color: <?php echo $color['hex_code']; ?>"
                                              title="<?php echo htmlspecialchars($color['name']); ?>"
                                              onclick="selectColor(this)"></div>
                                     </label>
@@ -275,6 +274,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <label for="notes" class="form-label">Special Instructions</label>
                             <textarea class="form-control" id="notes" name="notes" rows="4" 
                                       placeholder="Any special requirements, finishing preferences, or other notes..."></textarea>
+                        </div>
+                        
+                        <div class="price-display">
+                            <h5>Estimated Price</h5>
+                            <p class="price-note">We will contact you soon with final pricing and timeline.</p>
                         </div>
                     </div>
                     

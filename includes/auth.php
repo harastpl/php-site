@@ -58,7 +58,7 @@ function register($username, $email, $password, $phone = null, $address = null) 
     
     $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
     
-    $stmt = $pdo->prepare("INSERT INTO users (username, email, password, phone, address) VALUES (?, ?, ?, ?, ?)");
-    return $stmt->execute([$username, $email, $hashedPassword, $phone, $address]);
+    $stmt = $pdo->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
+    return $stmt->execute([$username, $email, $hashedPassword]);
 }
 ?>
