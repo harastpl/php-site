@@ -78,7 +78,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
                 </div>
                 
                 <?php if ($product['stock'] > 0): ?>
-                    <form method="post" class="mb-3">
+                    <form method="post" action="cart.php" class="mb-3">
+                        <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>">
                         <div class="row align-items-end">
                             <div class="col-md-4">
                                 <label for="quantity" class="form-label">Quantity</label>
@@ -87,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
                             </div>
                             <div class="col-md-8">
                                 <div class="d-grid gap-2 d-md-flex">
-                                    <button type="submit" name="add_to_cart" class="btn btn-primary">Add to Cart</button>
+                                    <button type="submit" name="add_to_cart" class="btn btn-primary" onclick="addToCart(event)">Add to Cart</button>
                                     <a href="checkout.php?product_id=<?php echo $product['id']; ?>&quantity=1" 
                                        class="btn btn-success" onclick="updateBuyNowLink(this)">Buy Now</a>
                                 </div>

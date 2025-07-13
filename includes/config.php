@@ -11,10 +11,10 @@ define('STL_UPLOAD_DIR', __DIR__ . '/../uploads/stl_files/');
 define('PRODUCT_IMAGE_DIR', __DIR__ . '/../uploads/products/');
 
 // PhonePe Configuration
-define('PHONEPE_MERCHANT_ID', 'YOUR_MERCHANT_ID');
-define('PHONEPE_SALT_KEY', 'YOUR_SALT_KEY');
+define('PHONEPE_MERCHANT_ID', 'YOUR_MERCHANT_ID'); // Replace with your PhonePe Merchant ID
+define('PHONEPE_SALT_KEY', 'YOUR_SALT_KEY'); // Replace with your PhonePe Salt Key
 define('PHONEPE_SALT_INDEX', 1);
-define('PHONEPE_BASE_URL', 'https://api-preprod.phonepe.com/apis/pg-sandbox');
+define('PHONEPE_BASE_URL', 'https://api-preprod.phonepe.com/apis/pg-sandbox'); // Use https://api.phonepe.com/apis/hermes for production
 
 // Pricing Configuration
 define('BASE_PRICE_PER_GRAM', 2.50);

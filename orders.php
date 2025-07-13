@@ -67,42 +67,43 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
         </div>
         
         <!-- Address Section -->
-        <div class="address-section mb-4">
-            <h5>Delivery Address</h5>
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Delivery Address</h5>
+                <?php if (empty($user['address'])): ?>
+                    <a href="address-form.php?redirect=orders.php" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus"></i> Add Address
+                    </a>
+                <?php else: ?>
+                    <a href="address-form.php?redirect=orders.php" class="btn btn-outline-primary btn-sm">
+                        Change Address
+                    </a>
+                <?php endif; ?>
+            </div>
+            <div class="card-body">
             <?php 
             $stmt = $pdo->prepare("SELECT address FROM users WHERE id = ?");
             $stmt->execute([$_SESSION['user_id']]);
             $user = $stmt->fetch();
+            
+            $address = null;
+            if (!empty($user['address'])) {
+                $address = json_decode($user['address'], true);
+            }
             ?>
-            <?php if (empty($user['address'])): ?>
-                <button class="add-address-btn" onclick="showAddressForm()">
-                    <i class="fas fa-plus"></i> Add Address
-                </button>
-                <div id="address-form" style="display: none;" class="mt-3">
-                    <form method="post" action="update-address.php">
-                        <textarea class="form-control" name="address" rows="3" placeholder="Enter your delivery address" required></textarea>
-                        <div class="mt-2">
-                            <button type="submit" class="btn btn-primary btn-sm">Save Address</button>
-                            <button type="button" class="btn btn-secondary btn-sm" onclick="hideAddressForm()">Cancel</button>
-                        </div>
-                    </form>
+            <?php if ($address): ?>
+                <div class="address-display">
+                    <h6><?php echo htmlspecialchars($address['full_name']); ?></h6>
+                    <p class="mb-1"><?php echo htmlspecialchars($address['address']); ?></p>
+                    <p class="mb-1"><?php echo htmlspecialchars($address['city'] . ', ' . $address['state'] . ' - ' . $address['pincode']); ?></p>
+                    <p class="mb-0"><strong>Phone:</strong> <?php echo htmlspecialchars($address['phone']); ?></p>
                 </div>
             <?php else: ?>
-                <div class="current-address">
-                    <p><strong>Current Address:</strong></p>
-                    <p><?php echo nl2br(htmlspecialchars($user['address'])); ?></p>
-                    <button class="btn btn-outline-primary btn-sm" onclick="showAddressForm()">Change Address</button>
-                </div>
-                <div id="address-form" style="display: none;" class="mt-3">
-                    <form method="post" action="update-address.php">
-                        <textarea class="form-control" name="address" rows="3" required><?php echo htmlspecialchars($user['address']); ?></textarea>
-                        <div class="mt-2">
-                            <button type="submit" class="btn btn-primary btn-sm">Update Address</button>
-                            <button type="button" class="btn btn-secondary btn-sm" onclick="hideAddressForm()">Cancel</button>
-                        </div>
-                    </form>
+                <div class="text-center py-3">
+                    <p class="text-muted mb-0">No delivery address added</p>
                 </div>
             <?php endif; ?>
+            </div>
         </div>
 
         <?php if (isset($_SESSION['success'])): ?>
