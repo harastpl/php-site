@@ -35,15 +35,15 @@ $products = getFeaturedProducts(6); // Get 6 featured products
             <h2 class="mb-4">Featured Products</h2>
             <div class="row">
                 <?php foreach ($products as $product): ?>
-                <div class="col-md-4 mb-4">
-                    <div class="card h-100">
+                <div class="col-md-4 mb-4" onclick="window.location.href='product.php?id=<?php echo $product['id']; ?>'">
+                    <div class="card h-100 product-card-clickable">
                         <img src="uploads/products/<?php echo htmlspecialchars($product['image']); ?>" class="card-img-top" alt="<?php echo htmlspecialchars($product['name']); ?>">
                         <div class="card-body">
                             <h5 class="card-title"><?php echo htmlspecialchars($product['name']); ?></h5>
                             <p class="card-text"><?php echo substr(htmlspecialchars($product['description']), 0, 100); ?>...</p>
                             <div class="d-flex justify-content-between align-items-center">
                                 <span class="price">$<?php echo number_format($product['price'], 2); ?></span>
-                                <a href="product.php?id=<?php echo $product['id']; ?>" class="btn btn-sm btn-outline-primary">View Details</a>
+                                <a href="product.php?id=<?php echo $product['id']; ?>" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation()">View Details</a>
                             </div>
                         </div>
                     </div>

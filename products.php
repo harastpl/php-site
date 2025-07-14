@@ -34,7 +34,7 @@ $products = getProducts();
         <?php else: ?>
             <div class="product-grid">
                 <?php foreach ($products as $product): ?>
-                <div class="card h-100">
+                <div class="card h-100 product-card-clickable" onclick="window.location.href='product.php?id=<?php echo $product['id']; ?>'">
                     <?php if ($product['is_featured']): ?>
                         <div class="featured-badge">Featured</div>
                     <?php endif; ?>
@@ -46,15 +46,13 @@ $products = getProducts();
                         
                         <div class="mb-3">
                             <span class="price"><?php echo formatCurrency($product['price']); ?></span>
-                            <?php if ($product['stock'] > 0): ?>
-                                <span class="badge bg-success ms-2">In Stock (<?php echo $product['stock']; ?>)</span>
-                            <?php else: ?>
+                            <?php if ($product['stock'] <= 0): ?>
                                 <span class="badge bg-danger ms-2">Out of Stock</span>
                             <?php endif; ?>
                         </div>
                         
                         <div class="d-grid gap-2">
-                            <a href="product.php?id=<?php echo $product['id']; ?>" class="btn btn-primary">View Details</a>
+                            <a href="product.php?id=<?php echo $product['id']; ?>" class="btn btn-primary" onclick="event.stopPropagation()">View Details</a>
                         </div>
                     </div>
                 </div>

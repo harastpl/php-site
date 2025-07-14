@@ -70,9 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
                 </div>
                 
                 <div class="mb-3">
-                    <?php if ($product['stock'] > 0): ?>
-                        <span class="badge bg-success">In Stock (<?php echo $product['stock']; ?> available)</span>
-                    <?php else: ?>
+                    <?php if ($product['stock'] <= 0): ?>
                         <span class="badge bg-danger">Out of Stock</span>
                     <?php endif; ?>
                 </div>
@@ -89,8 +87,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
                             <div class="col-md-8">
                                 <div class="d-grid gap-2 d-md-flex">
                                     <button type="submit" name="add_to_cart" class="btn btn-primary" onclick="addToCart(event)">Add to Cart</button>
-                                    <a href="address-form.php?redirect=<?php echo urlencode('checkout.php?product_id=' . $product['id'] . '&quantity=1'); ?>" 
-                                       class="btn btn-success" onclick="updateBuyNowLink(this)">Buy Now</a>
+                                    <a href="address-form.php?redirect=<?php echo urlencode('payment.php?product_id=' . $product['id'] . '&quantity=1'); ?>" 
+                                       class="btn btn-gradient-success buy-now-btn" onclick="updateBuyNowLink(this)">Buy Now</a>
                                 </div>
                             </div>
                         </div>
@@ -116,11 +114,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
         function updateBuyNowLink(element) {
             const quantity = document.getElementById('quantity').value;
             const productId = <?php echo $product['id']; ?>;
-            element.href = `address-form.php?redirect=${encodeURIComponent('checkout.php?product_id=' + productId + '&quantity=' + quantity)}`;
+            element.href = `address-form.php?redirect=${encodeURIComponent('payment.php?product_id=' + productId + '&quantity=' + quantity)}`;
         }
         
         document.getElementById('quantity').addEventListener('change', function() {
-            const buyNowBtn = document.querySelector('a[href*="checkout.php"]');
+            const buyNowBtn = document.querySelector('a[href*="payment.php"]');
             updateBuyNowLink(buyNowBtn);
         });
     </script>
