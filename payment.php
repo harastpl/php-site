@@ -18,7 +18,7 @@ if (!$order) {
 }
 
 // Check if order is ready for payment
-if ($order['status'] != 'processing' || $order['payment_status'] != 'pending') {
+if ($order['status'] != 'processing' || $order['payment_status'] != 'pending' || !$order['admin_price']) {
     $_SESSION['error'] = 'This order is not ready for payment.';
     redirect('orders.php');
 }

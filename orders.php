@@ -164,7 +164,9 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <?php endif; ?>
                                 <p><strong>Support:</strong> <?php echo $order['support_needed'] ? 'Yes' : 'No'; ?></p>
                                 <p><strong>Total:</strong> 
-                                    <?php if ($order['discount_amount'] > 0): ?>
+                                    <?php if ($order['status'] == 'pending'): ?>
+                                        <span class="text-muted">Pending admin review</span>
+                                    <?php elseif ($order['discount_amount'] > 0): ?>
                                         <span class="text-decoration-line-through"><?php echo formatCurrency($order['total']); ?></span>
                                         <span class="text-success"><?php echo formatCurrency($order['final_total']); ?></span>
                                         <small class="text-muted">(<?php echo formatCurrency($order['discount_amount']); ?> discount)</small>
@@ -194,13 +196,17 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <?php endif; ?>
                         
                         <?php if ($order['payment_status'] == 'pending' && $order['status'] == 'processing' && $order['admin_price'] > 0): ?>
+                            <?php if ($order['custom_stl']): ?>
                             <div class="mt-3">
                                 <a href="payment.php?order_id=<?php echo $order['id']; ?>" 
                                    class="btn btn-success">Pay Now</a>
                             </div>
+                            <?php endif; ?>
                         <?php elseif ($order['status'] == 'pending'): ?>
                             <div class="mt-3">
-                                <span class="badge bg-info">Waiting for admin pricing</span>
+                                <?php if ($order['custom_stl']): ?>
+                                    <span class="badge bg-info">Waiting for admin pricing</span>
+                                <?php endif; ?>
                             </div>
                         <?php endif; ?>
                     </div>

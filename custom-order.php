@@ -25,6 +25,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $errors[] = 'Design file is required';
     }
     
+    if (empty($color_id)) {
+        $errors[] = 'Please select a color';
+    }
+    
+    if (empty($material_id)) {
+        $errors[] = 'Please select a material';
+    }
+    
     if ($infill < 5 || $infill > 100 || $infill % 5 != 0) {
         $errors[] = 'Infill must be between 5-100% in multiples of 5';
     }
@@ -221,7 +229,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         
                         <div class="mb-3">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="support_needed" name="support_needed">
+                                <input class="form-check-input" type="checkbox" id="support_needed" name="support_needed" checked>
                                 <label class="form-check-label" for="support_needed">
                                     Add Support Material
                                 </label>
@@ -278,7 +286,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         
                         <div class="price-display">
                             <h5>Estimated Price</h5>
-                            <p class="price-note">We will contact you soon with final pricing and timeline.</p>
+                            <p class="price-note">We will contact you soon with final pricing and timeline. Total will be visible once admin reviews your order.</p>
                         </div>
                     </div>
                     

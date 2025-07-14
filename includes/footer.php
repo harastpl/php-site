@@ -18,6 +18,7 @@
                     <p><a href="custom-order.php">Custom 3D Printing</a></p>
                     <p><a href="products.php">Ready-made Products</a></p>
                     <p><a href="index.php">Design Consultation</a></p>
+                    <p><a href="terms.php">Terms & Conditions</a></p>
                 </div>
             </div>
             <hr style="border-color: #333;">

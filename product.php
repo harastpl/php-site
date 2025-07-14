@@ -89,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
                             <div class="col-md-8">
                                 <div class="d-grid gap-2 d-md-flex">
                                     <button type="submit" name="add_to_cart" class="btn btn-primary" onclick="addToCart(event)">Add to Cart</button>
-                                    <a href="checkout.php?product_id=<?php echo $product['id']; ?>&quantity=1" 
+                                    <a href="address-form.php?redirect=<?php echo urlencode('checkout.php?product_id=' . $product['id'] . '&quantity=1'); ?>" 
                                        class="btn btn-success" onclick="updateBuyNowLink(this)">Buy Now</a>
                                 </div>
                             </div>
@@ -116,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
         function updateBuyNowLink(element) {
             const quantity = document.getElementById('quantity').value;
             const productId = <?php echo $product['id']; ?>;
-            element.href = `checkout.php?product_id=${productId}&quantity=${quantity}`;
+            element.href = `address-form.php?redirect=${encodeURIComponent('checkout.php?product_id=' + productId + '&quantity=' + quantity)}`;
         }
         
         document.getElementById('quantity').addEventListener('change', function() {

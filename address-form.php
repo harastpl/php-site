@@ -90,10 +90,10 @@ $redirect = $_GET['redirect'] ?? 'orders.php';
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="phone" class="form-label">Phone Number *</label>
-                                        <input type="text" class="form-control" id="phone" name="phone" 
+                                        <input type="tel" class="form-control" id="phone" name="phone" 
                                                value="<?php echo htmlspecialchars($current_address['phone'] ?? '+91'); ?>" 
-                                               pattern="\+\d{1,3}\d{10}" required>
-                                        <div class="form-text">Include country code (e.g., +91)</div>
+                                               pattern="\+\d{1,3}\d{10,12}" required>
+                                        <div class="form-text">Include country code (e.g., +91 followed by 10 digits)</div>
                                     </div>
                                 </div>
                             </div>
@@ -117,6 +117,17 @@ $redirect = $_GET['redirect'] ?? 'orders.php';
             let value = e.target.value;
             if (!value.startsWith('+')) {
                 e.target.value = '+91' + value.replace(/^\+?91?/, '');
+            }
+        });
+        
+        // Validate phone number
+        document.getElementById('phone').addEventListener('blur', function(e) {
+            let value = e.target.value;
+            let phoneRegex = /^\+\d{1,3}\d{10,12}$/;
+            if (!phoneRegex.test(value)) {
+                e.target.setCustomValidity('Please enter a valid phone number with country code (+91 followed by 10 digits)');
+            } else {
+                e.target.setCustomValidity('');
             }
         });
         

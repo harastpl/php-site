@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
     
     if (empty($phone) || !preg_match('/^\+\d{1,3}\d{10}$/', $phone)) {
-        $errors[] = 'Invalid phone number. Please enter a valid phone number with country code';
+        $errors[] = 'Invalid phone number. Please enter a valid phone number with country code (+91 followed by 10 digits)';
     }
     
     if (empty($errors)) {

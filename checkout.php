@@ -76,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
     
     try {
         // Create order
-        $stmt = $pdo->prepare("INSERT INTO orders (user_id, total, final_total, status, payment_status) VALUES (?, ?, ?, 'pending', 'pending')");
+        $stmt = $pdo->prepare("INSERT INTO orders (user_id, total, final_total, status, payment_status) VALUES (?, ?, ?, 'processing', 'pending')");
         $stmt->execute([$_SESSION['user_id'], $total, $total]);
         $order_id = $pdo->lastInsertId();
         
@@ -193,6 +193,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
                             <form method="post">
                                 <div class="d-grid">
                                     <button type="submit" name="place_order" class="btn btn-primary btn-lg">Place Order</button>
+                                    <small class="text-muted text-center">
+                                        By placing this order, you agree to our 
+                                        <a href="terms.php" target="_blank">Terms and Conditions</a>
+                                    </small>
                                 </div>
                             </form>
                         <?php else: ?>
