@@ -42,7 +42,7 @@ $products = getFeaturedProducts(6); // Get 6 featured products
                             <h5 class="card-title"><?php echo htmlspecialchars($product['name']); ?></h5>
                             <p class="card-text"><?php echo substr(htmlspecialchars($product['description']), 0, 100); ?>...</p>
                             <div class="d-flex justify-content-between align-items-center">
-                                <span class="price">$<?php echo number_format($product['price'], 2); ?></span>
+                                <span class="price">₹<?php echo number_format($product['price'], 2); ?></span>
                                 <a href="product.php?id=<?php echo $product['id']; ?>" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation()">View Details</a>
                             </div>
                         </div>

@@ -47,14 +47,14 @@ $colors = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Colors | <?php echo SITE_NAME; ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="../assets/css/styles.css" rel="stylesheet">
+    <link href="../../assets/css/styles.css" rel="stylesheet">
 </head>
 <body>
-    <?php include 'includes/admin-header.php'; ?>
+    <?php include '../includes/admin-header.php'; ?>
 
     <div class="container-fluid">
         <div class="row">
-            <?php include 'includes/admin-sidebar.php'; ?>
+            <?php include '../includes/admin-sidebar2.php'; ?>
 
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
@@ -108,10 +108,10 @@ $colors = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <tr>
                                 <td><?php echo $color['id']; ?></td>
                                 <td>
-                                    <div style="width: 30px; height: 30px; background-color: #<?php echo $color['hex_code']; ?>; border: 1px solid #ccc; border-radius: 50%;"></div>
+                                    <div style="width: 30px; height: 30px; background-color: <?php echo $color['hex_code']; ?>; border: 1px solid #ccc; border-radius: 50%;"></div>
                                 </td>
                                 <td><?php echo htmlspecialchars($color['name']); ?></td>
-                                <td>#<?php echo htmlspecialchars($color['hex_code']); ?></td>
+                                <td><?php echo htmlspecialchars($color['hex_code']); ?></td>
                                 <td>
                                     <span class="badge bg-<?php echo $color['is_active'] ? 'success' : 'secondary'; ?>">
                                         <?php echo $color['is_active'] ? 'Active' : 'Inactive'; ?>

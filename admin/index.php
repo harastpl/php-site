@@ -113,7 +113,7 @@ $pendingOrders = $stmt->fetch()['pending_orders'];
                                     </span>
                                 </td>
                                 <td>
-                                    <a href="orders/view.php?id=<?php echo $order['id']; ?>" class="btn btn-sm btn-primary">View</a>
+                                    <a href="orders/" class="btn btn-sm btn-primary">View</a>
                                 </td>
                             </tr>
                             <?php endwhile; ?>
