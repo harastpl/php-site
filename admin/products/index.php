@@ -87,6 +87,7 @@ $lowStockProducts = getLowStockProducts();
                                 <th>Status</th>
                                 <th>Created</th>
                                 <th>Actions</th>
+                                <th>STL File</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -118,6 +119,14 @@ $lowStockProducts = getLowStockProducts();
                                     <a href="index.php?delete=<?php echo $product['id']; ?>" 
                                        class="btn btn-sm btn-danger" 
                                        onclick="return confirm('Are you sure you want to delete this product?')">Delete</a>
+                                </td>
+                                <td>
+                                    <?php if ($product['stl_file']): ?>
+                                        <a href="../uploads/stl_files/<?php echo $product['stl_file']; ?>" 
+                                           class="btn btn-sm btn-outline-primary" download>Download STL</a>
+                                    <?php else: ?>
+                                        <span class="text-muted">No file</span>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                             <?php endforeach; ?>

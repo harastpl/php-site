@@ -25,12 +25,11 @@ if ($order_id) {
     }
     
     // Check if order is ready for payment (custom orders only)
-    if ($order['status'] != 'processing' || $order['payment_status'] != 'pending' || !$order['admin_price']) {
-        $_SESSION['error'] = 'This order is not ready for payment.';
-        redirect('orders.php');
+    if ($order['admin_price']) {
+        $total_amount = $order['admin_price'];
+    } else {
+        $total_amount = $order['final_total'];
     }
-    
-    $total_amount = $order['admin_price'] ?? $order['final_total'];
 } elseif ($product_id) {
     // Direct product payment
     $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ?");
@@ -77,42 +76,88 @@ if ($order_id) {
     redirect('orders.php');
 }
 
-
 // PhonePe Payment Integration
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Get user details
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $user = $stmt->fetch();
+    
+    $address = null;
+    if (!empty($user['address'])) {
+        $address = json_decode($user['address'], true);
+    }
+    
     $merchantTransactionId = 'TXN' . time() . rand(1000, 9999);
     $amount = $total_amount * 100; // Convert to paise
     
-    $paymentData = [
+    $paymentData = array(
         'merchantId' => PHONEPE_MERCHANT_ID,
         'merchantTransactionId' => $merchantTransactionId,
         'merchantUserId' => 'USER' . $_SESSION['user_id'],
         'amount' => $amount,
-        'redirectUrl' => SITE_URL . '/payment-callback.php?order_id=' . ($order['id'] ?? $order_id),
+        'redirectUrl' => SITE_URL . '/payment-success.php?order_id=' . ($order['id'] ?? $order_id),
         'redirectMode' => 'POST',
-        'callbackUrl' => SITE_URL . '/payment-callback.php?order_id=' . ($order['id'] ?? $order_id),
-        'paymentInstrument' => [
+        'callbackUrl' => SITE_URL . '/payment-success.php?order_id=' . ($order['id'] ?? $order_id),
+        'merchantOrderId' => 'ORD' . ($order['id'] ?? $order_id),
+        'mobileNumber' => $address['phone'] ?? '9999999999',
+        'message' => 'Payment for 3D Print Order',
+        'email' => $user['email'],
+        'shortName' => $user['username'],
+        'paymentInstrument' => array(
             'type' => 'PAY_PAGE'
-        ]
-    ];
+        )
+    );
     
-    $jsonData = json_encode($paymentData);
-    $base64Data = base64_encode($jsonData);
-    $checksum = hash('sha256', $base64Data . '/pg/v1/pay' . PHONEPE_SALT_KEY) . '###' . PHONEPE_SALT_INDEX;
+    $jsonencode = json_encode($paymentData);
+    $payloadMain = base64_encode($jsonencode);
+    $salt_index = PHONEPE_SALT_INDEX;
+    $payload = $payloadMain . "/pg/v1/pay" . PHONEPE_API_KEY;
+    $sha256 = hash("sha256", $payload);
+    $final_x_header = $sha256 . '###' . $salt_index;
+    $request = json_encode(array('request' => $payloadMain));
     
     // Update order with payment ID
     $stmt = $pdo->prepare("UPDATE orders SET payment_id = ? WHERE id = ?");
     $stmt->execute([$merchantTransactionId, ($order['id'] ?? $order_id)]);
     
-    // Redirect to PhonePe
-    $phonepeUrl = PHONEPE_BASE_URL . '/pg/v1/pay';
+    $curl = curl_init();
+    curl_setopt_array($curl, [
+        CURLOPT_URL => PHONEPE_BASE_URL . "/pg/v1/pay",
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => "",
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => "POST",
+        CURLOPT_POSTFIELDS => $request,
+        CURLOPT_HTTPHEADER => [
+            "Content-Type: application/json",
+            "X-VERIFY: " . $final_x_header,
+            "accept: application/json"
+        ],
+    ]);
     
-    echo '<form id="phonepe-form" method="POST" action="' . $phonepeUrl . '">
-            <input type="hidden" name="request" value="' . $base64Data . '">
-            <input type="hidden" name="checksum" value="' . $checksum . '">
-          </form>
-          <script>document.getElementById("phonepe-form").submit();</script>';
-    exit;
+    $response = curl_exec($curl);
+    $err = curl_error($curl);
+    
+    curl_close($curl);
+    
+    if ($err) {
+        $_SESSION['error'] = "Payment Error: " . $err;
+        redirect('orders.php');
+    } else {
+        $res = json_decode($response);
+        
+        if (isset($res->success) && $res->success == '1') {
+            $payUrl = $res->data->instrumentResponse->redirectInfo->url;
+            header('Location: ' . $payUrl);
+            exit;
+        } else {
+            $_SESSION['error'] = 'Payment initialization failed. Please try again.';
+            redirect('orders.php');
+        }
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -145,8 +190,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <div class="card-body">
                         <div class="order-summary mb-4">
                             <h5>Order Summary</h5>
-                            <?php if (!$is_direct_product_payment): ?>
-                                <div class="d-flex justify-content-between text-success">
+                            <?php if (!$is_direct_product_payment && $order['admin_price']): ?>
+                                <div class="d-flex justify-content-between">
                                     <span>Original Amount:</span>
                                     <span><?php echo formatCurrency($order['total']); ?></span>
                                 </div>
@@ -156,12 +201,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         <span>-<?php echo formatCurrency($order['discount_amount']); ?></span>
                                     </div>
                                 <?php endif; ?>
-                                <?php if ($order['admin_price']): ?>
-                                    <div class="d-flex justify-content-between">
-                                        <span>Final Price :</span>
-                                        <span><?php echo formatCurrency($order['admin_price']); ?></span>
-                                    </div>
-                                <?php endif; ?>
+                                <div class="d-flex justify-content-between">
+                                    <span>Final Price:</span>
+                                    <span><?php echo formatCurrency($order['admin_price']); ?></span>
+                                </div>
                             <?php endif; ?>
                             <hr>
                             <div class="d-flex justify-content-between h5">
@@ -173,7 +216,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <form method="post">
                             <div class="d-grid gap-2">
                                 <button type="submit" class="btn btn-primary btn-lg">
-                                    Pay 
+                                    Pay with PhonePe
                                 </button>
                                 <a href="<?php echo $is_direct_product_payment ? 'products.php' : 'orders.php'; ?>" class="btn btn-secondary">
                                     <?php echo $is_direct_product_payment ? 'Back to Products' : 'Back to Orders'; ?>

@@ -51,21 +51,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ($uploadResult['success']) {
             try {
                 // Calculate estimated price (this would be refined based on actual file analysis)
-                $basePrice = SETUP_FEE + (BASE_PRICE_PER_GRAM * 50 * $quantity); // Assuming 50g average
-                
-                $totalPrice = $basePrice;
-                
-                // Apply bulk discount
-                $discount = calculateBulkDiscount($quantity, $totalPrice);
+                // Don't calculate price - admin will set it
+                $totalPrice = 0;
+                $discount = ['amount' => 0, 'final_total' => 0];
                 
                 // Create order
-                $stmt = $pdo->prepare("INSERT INTO orders (user_id, total, discount_amount, final_total, status) VALUES (?, ?, ?, ?, 'pending')");
-                $stmt->execute([$_SESSION['user_id'], $totalPrice, $discount['amount'], $discount['final_total']]);
+                $stmt = $pdo->prepare("INSERT INTO orders (user_id, total, discount_amount, final_total, status, admin_price) VALUES (?, ?, ?, ?, 'pending', NULL)");
+                $stmt->execute([$_SESSION['user_id'], 0, 0, 0]);
                 $orderId = $pdo->lastInsertId();
                 
                 // Create order item
                 $stmt = $pdo->prepare("INSERT INTO order_items (order_id, quantity, price, custom_stl, custom_notes, infill_percentage, layer_height, support_needed, color_id, material_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$orderId, $quantity, $discount['final_total'], $uploadResult['file_name'], $notes, $infill, $layer_height, $support_needed, $color_id, $material_id]);
+                $stmt->execute([$orderId, $quantity, 0, $uploadResult['file_name'], $notes, $infill, $layer_height, $support_needed, $color_id, $material_id]);
                 
                 // Send notification email
                 $colorName = '';
@@ -91,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $message .= "Infill: {$infill}%\n";
                 $message .= "Layer Height: {$layer_height}mm\n";
                 $message .= "Support Needed: " . ($support_needed ? 'Yes' : 'No') . "\n";
-                $message .= "Estimated Total: " . formatCurrency($discount['final_total']) . "\n";
+                $message .= "Price: To be determined after review\n";
                 $message .= "Notes: $notes\n";
                 $message .= "File: " . SITE_URL . "/uploads/stl_files/" . $uploadResult['file_name'] . "\n";
                 
@@ -286,7 +283,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         
                         <div class="price-display">
                             <h5>Estimated Price</h5>
-                            <p class="price-note">We will contact you soon with final pricing and timeline. Total will be visible once admin reviews your order.</p>
+                            <p class="price-note">We will contact you soon with final pricing and timeline.</p>
                         </div>
                     </div>
                     

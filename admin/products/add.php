@@ -12,6 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $stock = (int)$_POST['stock'];
     $low_stock_threshold = (int)$_POST['low_stock_threshold'];
     $image = $_FILES['image'];
+    $stl_file = $_FILES['stl_file'];
     
     $errors = [];
     
@@ -34,6 +35,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     
     if ($image['error'] == UPLOAD_ERR_NO_FILE) {
         $errors[] = 'Product image is required';
+    }
+    
+    if ($stl_file['error'] == UPLOAD_ERR_NO_FILE) {
+        $errors[] = 'Product STL file is required';
     }
     
     if (empty($errors)) {
@@ -62,16 +67,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
         if (empty($errors)) {
             if (move_uploaded_file($image["tmp_name"], $target_file)) {
+                // Handle STL file upload
+                $stl_target_dir = STL_UPLOAD_DIR;
+                $stl_file_name = time() . '_' . basename($stl_file["name"]);
+                $stl_target_file = $stl_target_dir . $stl_file_name;
+                $stl_file_type = strtolower(pathinfo($stl_target_file, PATHINFO_EXTENSION));
+                
+                // Check STL file type
+                $allowed_stl_types = ['stl', '3mf', 'obj'];
+                if (!in_array($stl_file_type, $allowed_stl_types)) {
+                    $errors[] = 'Sorry, only STL, 3MF, OBJ files are allowed for product files.';
+                }
+                
+                if (empty($errors) && move_uploaded_file($stl_file["tmp_name"], $stl_target_file)) {
                 // Insert product into database
                 try {
                     $is_featured = (int)$_POST['is_featured'];
-                    $stmt = $pdo->prepare("INSERT INTO products (name, description, price, stock, low_stock_threshold, image, is_featured) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                    $stmt->execute([$name, $description, $price, $stock, $low_stock_threshold, $file_name, $is_featured]);
+                    $stmt = $pdo->prepare("INSERT INTO products (name, description, price, stock, low_stock_threshold, image, is_featured, stl_file) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                    $stmt->execute([$name, $description, $price, $stock, $low_stock_threshold, $file_name, $is_featured, $stl_file_name]);
                     
                     $_SESSION['success'] = 'Product added successfully!';
                     redirect('index.php');
                 } catch (PDOException $e) {
                     $errors[] = 'Database error: ' . $e->getMessage();
+                }
+                } else {
+                    $errors[] = 'Sorry, there was an error uploading the STL file.';
                 }
             } else {
                 $errors[] = 'Sorry, there was an error uploading your file.';
@@ -157,6 +178,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <label for="image" class="form-label">Product Image</label>
                         <input type="file" class="form-control" id="image" name="image" required>
                         <div class="form-text">Upload a high-quality image of the product (max 5MB).</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="stl_file" class="form-label">Product STL File</label>
+                        <input type="file" class="form-control" id="stl_file" name="stl_file" accept=".stl,.3mf,.obj" required>
+                        <div class="form-text">Upload the STL file for this product (STL, 3MF, OBJ formats).</div>
                     </div>
                     
                     <button type="submit" class="btn btn-primary">Add Product</button>

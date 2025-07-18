@@ -29,12 +29,14 @@ $stmt = $pdo->query("
            oi.custom_stl, oi.custom_notes, oi.infill_percentage, oi.layer_height, 
            oi.support_needed, oi.quantity,
            c.name as color_name, CONCAT('#', c.hex_code) as hex_code,
-           m.name as material_name
+           m.name as material_name,
+           p.name as product_name, p.id as product_id
     FROM orders o
     LEFT JOIN users u ON o.user_id = u.id
     LEFT JOIN order_items oi ON o.id = oi.order_id
     LEFT JOIN colors c ON oi.color_id = c.id
     LEFT JOIN materials m ON oi.material_id = m.id
+    LEFT JOIN products p ON oi.product_id = p.id
     ORDER BY o.created_at DESC
 ");
 $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -90,6 +92,9 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 </td>
                                 <td>
                                     <strong>Qty:</strong> <?php echo $order['quantity']; ?><br>
+                                    <?php if ($order['product_id'] && $order['product_name']): ?>
+                                        <strong>Product:</strong> <?php echo htmlspecialchars($order['product_name']); ?> (ID: <?php echo $order['product_id']; ?>)<br>
+                                    <?php endif; ?>
                                     <?php if ($order['material_name']): ?>
                                         <strong>Material:</strong> <?php echo htmlspecialchars($order['material_name']); ?><br>
                                     <?php endif; ?>
