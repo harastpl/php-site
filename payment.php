@@ -158,7 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <?php endif; ?>
                                 <?php if ($order['admin_price']): ?>
                                     <div class="d-flex justify-content-between">
-                                        <span>Final Price (Admin Set):</span>
+                                        <span>Final Price :</span>
                                         <span><?php echo formatCurrency($order['admin_price']); ?></span>
                                     </div>
                                 <?php endif; ?>
@@ -173,7 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <form method="post">
                             <div class="d-grid gap-2">
                                 <button type="submit" class="btn btn-primary btn-lg">
-                                    Pay with PhonePe
+                                    Pay 
                                 </button>
                                 <a href="<?php echo $is_direct_product_payment ? 'products.php' : 'orders.php'; ?>" class="btn btn-secondary">
                                     <?php echo $is_direct_product_payment ? 'Back to Products' : 'Back to Orders'; ?>
