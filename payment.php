@@ -46,9 +46,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     // Initiate payment with PhonePe
-    include 'includes/phonepe_v2_auth.php'; // Gets the $accessToken
+    include 'includes/phonepe_v2_auth.php'; // This should provide the $accessToken
     
-    $merchantOrderId = 'ORD' . $order_id . 'T' . time();
+    // Generate a unique Merchant Order ID with a readable timestamp
+    $merchantOrderId = 'ORD' . $order_id . 'D' . date('YmdHis');
     $amountInPaisa = (int)($total_amount * 100);
 
     $payload = [
@@ -57,7 +58,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         'expireAfter' => 1200,
         'paymentFlow' => [
             'type' => 'PG_CHECKOUT',
-            'merchantUrls' => ['redirectUrl' => SITE_URL . '/payment-callback.php?order_id=' . $order_id]
+            'merchantUrls' => [
+                // CORRECTED: Pass the merchantOrderId as 'moid' to the callback URL
+                'redirectUrl' => SITE_URL . '/payment-callback.php?moid=' . $merchantOrderId
+            ]
         ]
     ];
 
@@ -77,6 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $getPaymentInfo = json_decode($response, true);
 
     if (isset($getPaymentInfo['redirectUrl'])) {
+        // Store the generated merchantOrderId in the 'payment_id' column
         $stmt = $pdo->prepare("UPDATE orders SET payment_id = ? WHERE id = ?");
         $stmt->execute([$merchantOrderId, $order_id]);
         $redirectTokenUrl = $getPaymentInfo['redirectUrl'];
@@ -145,10 +150,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             var tokenUrl = '<?php echo $redirectTokenUrl; ?>';
-            var orderId = '<?php echo $order_id; ?>';
+            // The callback now uses the merchant order id (moid)
+            var moid = '<?php echo $merchantOrderId; ?>';
 
             function paymentCallback(response) {
-                window.location.href = 'payment-callback.php?order_id=' + orderId;
+                // Redirect to the callback handler with the merchant order id
+                window.location.href = 'payment-callback.php?moid=' + moid;
             }
 
             if (window.PhonePeCheckout && window.PhonePeCheckout.transact) {

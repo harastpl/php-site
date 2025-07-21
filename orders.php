@@ -21,6 +21,23 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute([$_SESSION['user_id']]);
 $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch user address separately to avoid issues with multiple order items
+$stmt_user = $pdo->prepare("SELECT address FROM users WHERE id = ?");
+$stmt_user->execute([$_SESSION['user_id']]);
+$user = $stmt_user->fetch();
+
+$address = null;
+if (!empty($user['address'])) {
+    $address = json_decode($user['address'], true);
+}
+
+// Flash message handling
+$flash_message = null;
+if (isset($_SESSION['flash_message'])) {
+    $flash_message = $_SESSION['flash_message'];
+    unset($_SESSION['flash_message']);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -30,6 +47,7 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <title>My Orders | <?php echo SITE_NAME; ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="assets/css/styles.css" rel="stylesheet">
     <style>
         body {
@@ -38,15 +56,20 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
             color: #e0e0ff;
             min-height: 100vh;
         }
-        .order-card {
+        .card, .order-card {
             background: rgba(26, 26, 46, 0.8);
             border: 1px solid rgba(167, 139, 250, 0.2);
             border-radius: 10px;
             margin-bottom: 20px;
         }
+        .card-header {
+             background-color: rgba(30, 30, 50, 0.9);
+             border-bottom: 1px solid rgba(167, 139, 250, 0.2);
+        }
         .status-badge {
             font-size: 0.8em;
             padding: 5px 10px;
+            border-radius: 15px;
         }
         .color-preview {
             width: 20px;
@@ -54,6 +77,8 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
             border-radius: 50%;
             display: inline-block;
             border: 1px solid #fff;
+            vertical-align: middle;
+            margin-right: 5px;
         }
     </style>
 </head>
@@ -66,57 +91,42 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <a href="custom-order.php" class="btn btn-primary">New Custom Order</a>
         </div>
         
+        <?php if ($flash_message): ?>
+            <div class="alert alert-<?php echo htmlspecialchars($flash_message['type']); ?> alert-dismissible fade show" role="alert">
+                <?php echo htmlspecialchars($flash_message['message']); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endif; ?>
+
         <!-- Address Section -->
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Delivery Address</h5>
-                <?php if (empty($user['address'])): ?>
-                    <a href="address-form.php?redirect=orders.php" class="btn btn-primary btn-sm">
-                        <i class="fas fa-plus"></i> Add Address
-                    </a>
-                <?php else: ?>
-                    <a href="address-form.php?redirect=orders.php" class="btn btn-outline-primary btn-sm">
-                        Change Address
-                    </a>
-                <?php endif; ?>
+                <a href="address-form.php?redirect=orders.php" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-edit"></i> <?php echo $address ? 'Change' : 'Add'; ?> Address
+                </a>
             </div>
             <div class="card-body">
-            <?php 
-            $stmt = $pdo->prepare("SELECT address FROM users WHERE id = ?");
-            $stmt->execute([$_SESSION['user_id']]);
-            $user = $stmt->fetch();
-            
-            $address = null;
-            if (!empty($user['address'])) {
-                $address = json_decode($user['address'], true);
-            }
-            ?>
-            <?php if ($address): ?>
-                <div class="address-display">
-                    <h6><?php echo htmlspecialchars($address['full_name']); ?></h6>
-                    <p class="mb-1"><?php echo htmlspecialchars($address['address']); ?></p>
-                    <p class="mb-1"><?php echo htmlspecialchars($address['city'] . ', ' . $address['state'] . ' - ' . $address['pincode']); ?></p>
-                    <p class="mb-0"><strong>Phone:</strong> <?php echo htmlspecialchars($address['phone']); ?></p>
-                </div>
-            <?php else: ?>
-                <div class="text-center py-3">
-                    <p class="text-muted mb-0">No delivery address added</p>
-                </div>
-            <?php endif; ?>
+                <?php if ($address): ?>
+                    <div class="address-display">
+                        <h6><?php echo htmlspecialchars($address['full_name']); ?></h6>
+                        <p class="mb-1"><?php echo htmlspecialchars($address['address']); ?></p>
+                        <p class="mb-1"><?php echo htmlspecialchars($address['city'] . ', ' . $address['state'] . ' - ' . $address['pincode']); ?></p>
+                        <p class="mb-0"><strong>Phone:</strong> <?php echo htmlspecialchars($address['phone']); ?></p>
+                    </div>
+                <?php else: ?>
+                    <div class="text-center py-3">
+                        <p class="text-muted mb-0">No delivery address added. Please add one before checkout.</p>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
-
-        <?php if (isset($_SESSION['success'])): ?>
-            <div class="alert alert-success">
-                <?php echo $_SESSION['success']; unset($_SESSION['success']); ?>
-            </div>
-        <?php endif; ?>
 
         <?php if (empty($orders)): ?>
             <div class="text-center py-5">
                 <h4>No orders found</h4>
                 <p>You haven't placed any orders yet.</p>
-                <a href="custom-order.php" class="btn btn-primary">Place Your First Order</a>
+                <a href="products.php" class="btn btn-primary">Browse Products</a>
             </div>
         <?php else: ?>
             <?php foreach ($orders as $order): ?>
@@ -132,11 +142,11 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <?php echo ucfirst($order['status']); ?>
                             </span>
                             <span class="badge status-badge bg-<?php 
-                                echo $order['payment_status'] == 'pending' ? 'secondary' : 
-                                     ($order['payment_status'] == 'paid' ? 'success' : 
-                                     ($order['payment_status'] == 'failed' ? 'danger' : 'warning')); 
+                                echo $order['payment_status'] == 'Pending' ? 'secondary' : 
+                                     ($order['payment_status'] == 'Paid' ? 'success' : 
+                                     ($order['payment_status'] == 'Failed' ? 'danger' : 'warning')); 
                             ?>">
-                                Payment: <?php echo ucfirst($order['payment_status']); ?>
+                                Payment: <?php echo ucfirst(strtolower($order['payment_status'])); ?>
                             </span>
                         </div>
                     </div>
@@ -164,7 +174,7 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <?php endif; ?>
                                 <p><strong>Support:</strong> <?php echo $order['support_needed'] ? 'Yes' : 'No'; ?></p>
                                 <p><strong>Total:</strong> 
-                                    <?php if ($order['status'] == 'pending'): ?>
+                                    <?php if ($order['status'] == 'pending' && $order['final_total'] == 0): ?>
                                         <span class="text-muted">Pending admin review</span>
                                     <?php elseif ($order['discount_amount'] > 0): ?>
                                         <span class="text-decoration-line-through"><?php echo formatCurrency($order['total']); ?></span>
@@ -182,7 +192,7 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <p><strong>Design File:</strong> 
                                     <a href="uploads/stl_files/<?php echo $order['custom_stl']; ?>" 
                                        class="btn btn-sm btn-outline-primary" download>
-                                        Download File
+                                        <i class="fas fa-download"></i> Download File
                                     </a>
                                 </p>
                             </div>
@@ -195,20 +205,15 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             </div>
                         <?php endif; ?>
                         
-                        <?php if ($order['payment_status'] == 'pending' && $order['status'] == 'processing' && $order['admin_price'] > 0): ?>
-                            <?php if ($order['custom_stl']): ?>
-                            <div class="mt-3">
-                                <a href="payment.php?order_id=<?php echo $order['id']; ?>" 
-                                   class="btn btn-success">Pay Now</a>
-                            </div>
+                        <div class="mt-3 text-end">
+                            <?php if ($order['payment_status'] == 'Pending' && $order['status'] == 'processing' && $order['final_total'] > 0): ?>
+                                <a href="payment.php?order_id=<?php echo $order['id']; ?>" class="btn btn-success">
+                                    <i class="fas fa-credit-card"></i> Pay Now
+                                </a>
+                            <?php elseif ($order['status'] == 'pending' && $order['final_total'] == 0): ?>
+                                <span class="badge bg-info">Waiting for admin pricing</span>
                             <?php endif; ?>
-                        <?php elseif ($order['status'] == 'pending'): ?>
-                            <div class="mt-3">
-                                <?php if ($order['custom_stl']): ?>
-                                    <span class="badge bg-info">Waiting for admin pricing</span>
-                                <?php endif; ?>
-                            </div>
-                        <?php endif; ?>
+                        </div>
                     </div>
                 </div>
             <?php endforeach; ?>
@@ -216,21 +221,6 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
     </main>
 
     <?php include 'includes/footer.php'; ?>
-
-    <?php if (isset($_SESSION['error'])): ?>
-            <div class="alert alert-danger">
-                <?php echo $_SESSION['error']; unset($_SESSION['error']); ?>
-            </div>
-        <?php endif; ?>
-    
-    <script>
-        function showAddressForm() {
-            document.getElementById('address-form').style.display = 'block';
-        }
-        
-        function hideAddressForm() {
-            document.getElementById('address-form').style.display = 'none';
-        }
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
