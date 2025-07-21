@@ -4,7 +4,7 @@ require_once 'config.php';
 // Database Configuration
 define('DB_HOST', 'localhost');
 define('DB_USER', 'voltdgec_3dprint_shop');
-define('DB_PASS', 'sFR3ffJbGDLqs5P3wvF7');
+define('DB_PASS', '3DRRzF6CRmkdUVBLskK2');
 define('DB_NAME', 'voltdgec_3dprint_shop');
 
 try {

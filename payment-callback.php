@@ -3,48 +3,61 @@ require_once 'includes/config.php';
 require_once 'includes/functions.php';
 require_once 'includes/auth.php';
 
-$order_id = isset($_GET['order_id']) ? (int)$_GET['order_id'] : 0;
+requireLogin();
 
-// Get order details
-$stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ?");
-$stmt->execute([$order_id]);
+$order_id = (int)($_GET['order_id'] ?? 0);
+
+if (!$order_id) {
+    $_SESSION['error'] = 'Invalid callback request.';
+    redirect('orders.php');
+    exit();
+}
+
+// Fetch the order to get the merchantOrderId (stored in payment_id)
+$stmt = $pdo->prepare("SELECT payment_id FROM orders WHERE id = ? AND user_id = ?");
+$stmt->execute([$order_id, $_SESSION['user_id']]);
 $order = $stmt->fetch();
 
-if (!$order) {
-    $_SESSION['error'] = 'Order not found.';
+if (!$order || empty($order['payment_id'])) {
+    $_SESSION['error'] = 'Could not find the transaction to verify.';
+    redirect('orders.php');
+    exit();
+}
+
+$merchantOrderId = $order['payment_id'];
+
+// Get a new access token to make an authenticated API call
+include 'includes/phonepe_v2_auth.php';
+
+// Check the status of the transaction
+$curl = curl_init();
+curl_setopt_array($curl, array(
+  CURLOPT_URL => PHONEPE_BASE_URL . '/checkout/v2/status/' . $merchantOrderId,
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_CUSTOMREQUEST => 'GET',
+  CURLOPT_HTTPHEADER => array(
+    'Content-Type: application/json',
+    'Authorization: O-Bearer ' . $accessToken
+  ),
+));
+
+$response = curl_exec($curl);
+curl_close($curl);
+$statusInfo = json_decode($response, true);
+
+if (isset($statusInfo['paymentState']) && $statusInfo['paymentState'] === 'COMPLETED') {
+    // Payment is successful, update your database
+    $stmt_update = $pdo->prepare("UPDATE orders SET status = 'processing', payment_status = 'paid' WHERE id = ?");
+    $stmt_update->execute([$order_id]);
+
+    $_SESSION['success'] = 'Payment successful! Your order #' . $order_id . ' is now being processed.';
+    redirect('orders.php');
+} else {
+    // Payment failed or is in another state
+    $stmt_update = $pdo->prepare("UPDATE orders SET payment_status = 'failed' WHERE id = ?");
+    $stmt_update->execute([$order_id]);
+
+    $_SESSION['error'] = 'Payment failed for order #' . $order_id . '. Please try again or contact support.';
     redirect('orders.php');
 }
-
-$paymentStatus = 'failed';
-$message = 'Payment failed. Please try again.';
-
-// Verify payment with PhonePe
-if (isset($_POST['response'])) {
-    $response = json_decode(base64_decode($_POST['response']), true);
-    
-    if ($response && isset($response['success']) && $response['success']) {
-        $paymentStatus = 'paid';
-        $message = 'Payment successful! Your order is now being processed.';
-        
-        // Update order status
-        $stmt = $pdo->prepare("UPDATE orders SET payment_status = 'paid', status = 'processing' WHERE id = ?");
-        $stmt->execute([$order_id]);
-        
-        // Send confirmation email
-        $subject = 'Payment Confirmation - Order #' . $order_id;
-        $emailMessage = "Dear " . $_SESSION['username'] . ",\n\n";
-        $emailMessage .= "Your payment for Order #$order_id has been successfully processed.\n";
-        $emailMessage .= "Amount Paid: " . formatCurrency($order['final_total']) . "\n\n";
-        $emailMessage .= "Your order is now being processed and you will receive updates on its progress.\n\n";
-        $emailMessage .= "Thank you for choosing " . SITE_NAME . "!\n";
-        
-        sendEmailNotification($_SESSION['email'], $subject, $emailMessage);
-    }
-} else {
-    // Handle GET callback (user cancelled or error)
-    $message = 'Payment was cancelled or failed. Please try again.';
-}
-
-$_SESSION[$paymentStatus == 'paid' ? 'success' : 'error'] = $message;
-redirect('orders.php');
 ?>

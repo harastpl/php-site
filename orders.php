@@ -216,6 +216,12 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
     </main>
 
     <?php include 'includes/footer.php'; ?>
+
+    <?php if (isset($_SESSION['error'])): ?>
+            <div class="alert alert-danger">
+                <?php echo $_SESSION['error']; unset($_SESSION['error']); ?>
+            </div>
+        <?php endif; ?>
     
     <script>
         function showAddressForm() {

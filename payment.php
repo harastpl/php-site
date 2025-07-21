@@ -5,191 +5,166 @@ require_once 'includes/auth.php';
 
 requireLogin();
 
-$order_id = isset($_GET['order_id']) ? (int)$_GET['order_id'] : 0;
-$product_id = isset($_GET['product_id']) ? (int)$_GET['product_id'] : 0;
-$quantity = isset($_GET['quantity']) ? (int)$_GET['quantity'] : 1;
-
-$order = null;
+// Use $_REQUEST to handle both GET (initial load) and POST (form submission)
+$order_id = (int)($_REQUEST['order_id'] ?? 0);
+$product_id = (int)($_REQUEST['product_id'] ?? 0);
+$quantity = (int)($_REQUEST['quantity'] ?? 1);
 $total_amount = 0;
-$is_direct_product_payment = false;
+$redirectTokenUrl = '';
+$merchantOrderId = '';
 
-if ($order_id) {
-    // Existing order payment
-    $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ? AND user_id = ?");
-    $stmt->execute([$order_id, $_SESSION['user_id']]);
-    $order = $stmt->fetch();
-    
-    if (!$order) {
-        $_SESSION['error'] = 'Order not found.';
-        redirect('orders.php');
-    }
-    
-    // Check if order is ready for payment (custom orders only)
-    if ($order['status'] != 'processing' || $order['payment_status'] != 'pending' || !$order['admin_price']) {
-        $_SESSION['error'] = 'This order is not ready for payment.';
-        redirect('orders.php');
-    }
-    
-    $total_amount = $order['admin_price'] ?? $order['final_total'];
-} elseif ($product_id) {
-    // Direct product payment
-    $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ?");
-    $stmt->execute([$product_id]);
-    $product = $stmt->fetch();
-    
-    if (!$product || $product['stock'] < $quantity) {
-        $_SESSION['error'] = 'Product not available or insufficient stock.';
-        redirect('products.php');
-    }
-    
-    $total_amount = $product['price'] * $quantity;
-    $is_direct_product_payment = true;
-    
-    // Create order for direct product payment
-    if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+// This block only runs when the "Pay Now" button is clicked
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // If it's a "Buy Now" link, the order must be created first
+    if ($product_id && !$order_id) {
         try {
-            $stmt = $pdo->prepare("INSERT INTO orders (user_id, total, final_total, status, payment_status) VALUES (?, ?, ?, 'processing', 'pending')");
-            $stmt->execute([$_SESSION['user_id'], $total_amount, $total_amount]);
-            $order_id = $pdo->lastInsertId();
-            
-            // Add order item
-            $stmt = $pdo->prepare("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$order_id, $product_id, $quantity, $product['price']]);
-            
-            // Update stock
-            $stmt = $pdo->prepare("UPDATE products SET stock = stock - ? WHERE id = ?");
-            $stmt->execute([$quantity, $product_id]);
-            
-            // Create order array for payment processing
-            $order = [
-                'id' => $order_id,
-                'total' => $total_amount,
-                'final_total' => $total_amount,
-                'admin_price' => null
-            ];
+            $stmt_product = $pdo->prepare("SELECT * FROM products WHERE id = ?");
+            $stmt_product->execute([$product_id]);
+            $product = $stmt_product->fetch();
+            if ($product) {
+                $total_amount = $product['price'] * $quantity;
+                $stmt_order = $pdo->prepare("INSERT INTO orders (user_id, total, final_total, status, payment_status) VALUES (?, ?, ?, 'pending', 'pending')");
+                $stmt_order->execute([$_SESSION['user_id'], $total_amount, $total_amount]);
+                $order_id = $pdo->lastInsertId(); // Get the newly created order ID
+
+                $stmt_item = $pdo->prepare("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)");
+                $stmt_item->execute([$order_id, $product_id, $quantity, $product['price']]);
+            }
         } catch (PDOException $e) {
-            $_SESSION['error'] = 'Error creating order: ' . $e->getMessage();
-            redirect('products.php');
+            die('Error creating order: ' . $e->getMessage());
         }
     }
-} else {
-    $_SESSION['error'] = 'Invalid payment request.';
-    redirect('orders.php');
-}
-
-
-// PhonePe Payment Integration
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $merchantTransactionId = 'TXN' . time() . rand(1000, 9999);
-    $amount = $total_amount * 100; // Convert to paise
     
-    $paymentData = [
-        'merchantId' => PHONEPE_MERCHANT_ID,
-        'merchantTransactionId' => $merchantTransactionId,
-        'merchantUserId' => 'USER' . $_SESSION['user_id'],
-        'amount' => $amount,
-        'redirectUrl' => SITE_URL . '/payment-callback.php?order_id=' . ($order['id'] ?? $order_id),
-        'redirectMode' => 'POST',
-        'callbackUrl' => SITE_URL . '/payment-callback.php?order_id=' . ($order['id'] ?? $order_id),
-        'paymentInstrument' => [
-            'type' => 'PAY_PAGE'
+    // Now that we have a definite order_id, fetch its details to get the final amount
+    if ($order_id) {
+        $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ? AND user_id = ?");
+        $stmt->execute([$order_id, $_SESSION['user_id']]);
+        $order = $stmt->fetch();
+        if ($order) {
+            $total_amount = $order['final_total']; // Use the final_total from the order
+        }
+    }
+
+    // Initiate payment with PhonePe
+    include 'includes/phonepe_v2_auth.php'; // Gets the $accessToken
+    
+    $merchantOrderId = 'ORD' . $order_id . 'T' . time();
+    $amountInPaisa = (int)($total_amount * 100);
+
+    $payload = [
+        'merchantOrderId' => $merchantOrderId,
+        'amount' => $amountInPaisa,
+        'expireAfter' => 1200,
+        'paymentFlow' => [
+            'type' => 'PG_CHECKOUT',
+            'merchantUrls' => ['redirectUrl' => SITE_URL . '/payment-callback.php?order_id=' . $order_id]
         ]
     ];
-    
-    $jsonData = json_encode($paymentData);
-    $base64Data = base64_encode($jsonData);
-    $checksum = hash('sha256', $base64Data . '/pg/v1/pay' . PHONEPE_SALT_KEY) . '###' . PHONEPE_SALT_INDEX;
-    
-    // Update order with payment ID
-    $stmt = $pdo->prepare("UPDATE orders SET payment_id = ? WHERE id = ?");
-    $stmt->execute([$merchantTransactionId, ($order['id'] ?? $order_id)]);
-    
-    // Redirect to PhonePe
-    $phonepeUrl = PHONEPE_BASE_URL . '/pg/v1/pay';
-    
-    echo '<form id="phonepe-form" method="POST" action="' . $phonepeUrl . '">
-            <input type="hidden" name="request" value="' . $base64Data . '">
-            <input type="hidden" name="checksum" value="' . $checksum . '">
-          </form>
-          <script>document.getElementById("phonepe-form").submit();</script>';
-    exit;
+
+    $curl = curl_init();
+    curl_setopt_array($curl, array(
+      CURLOPT_URL => PHONEPE_BASE_URL . '/checkout/v2/pay',
+      CURLOPT_RETURNTRANSFER => true,
+      CURLOPT_CUSTOMREQUEST => 'POST',
+      CURLOPT_POSTFIELDS => json_encode($payload),
+      CURLOPT_HTTPHEADER => array(
+        'Content-Type: application/json',
+        'Authorization: O-Bearer ' . $accessToken
+      ),
+    ));
+    $response = curl_exec($curl);
+    curl_close($curl);
+    $getPaymentInfo = json_decode($response, true);
+
+    if (isset($getPaymentInfo['redirectUrl'])) {
+        $stmt = $pdo->prepare("UPDATE orders SET payment_id = ? WHERE id = ?");
+        $stmt->execute([$merchantOrderId, $order_id]);
+        $redirectTokenUrl = $getPaymentInfo['redirectUrl'];
+    } else {
+        $_SESSION['error'] = 'Gateway Error: ' . ($getPaymentInfo['error'] ?? 'Could not initiate payment.');
+    }
+} else {
+    // This is the GET request part - just display the page details
+    if ($order_id) {
+        $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ? AND user_id = ?");
+        $stmt->execute([$order_id, $_SESSION['user_id']]);
+        $order = $stmt->fetch();
+        if ($order) $total_amount = $order['final_total'];
+    } elseif ($product_id) {
+        $stmt = $pdo->prepare("SELECT price FROM products WHERE id = ?");
+        $stmt->execute([$product_id]);
+        $product = $stmt->fetch();
+        if ($product) $total_amount = $product['price'] * $quantity;
+    }
 }
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment | <?php echo SITE_NAME; ?></title>
+    <title>PhonePe Payment</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Serif:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="assets/css/styles.css" rel="stylesheet">
+    <script src="https://mercury.phonepe.com/web/bundle/checkout.js"></script>
 </head>
 <body>
     <?php include 'includes/header.php'; ?>
-
     <main class="container mt-5 mb-5">
         <div class="row justify-content-center">
             <div class="col-md-6">
+                <?php if (isset($_SESSION['error'])): ?>
+                    <div class="alert alert-danger"><?php echo $_SESSION['error']; unset($_SESSION['error']); ?></div>
+                <?php endif; ?>
                 <div class="card shadow-lg">
-                    <div class="card-header text-center">
-                        <h4>Payment</h4>
-                        <p class="text-muted mb-0">
-                            <?php if ($is_direct_product_payment): ?>
-                                Product Purchase
-                            <?php else: ?>
-                                Order #<?php echo $order['id']; ?>
-                            <?php endif; ?>
-                        </p>
-                    </div>
+                    <div class="card-header text-center"><h4>Payment</h4></div>
                     <div class="card-body">
                         <div class="order-summary mb-4">
                             <h5>Order Summary</h5>
-                            <?php if (!$is_direct_product_payment): ?>
-                                <div class="d-flex justify-content-between text-success">
-                                    <span>Original Amount:</span>
-                                    <span><?php echo formatCurrency($order['total']); ?></span>
-                                </div>
-                                <?php if ($order['discount_amount'] > 0): ?>
-                                    <div class="d-flex justify-content-between text-success">
-                                        <span>Discount:</span>
-                                        <span>-<?php echo formatCurrency($order['discount_amount']); ?></span>
-                                    </div>
-                                <?php endif; ?>
-                                <?php if ($order['admin_price']): ?>
-                                    <div class="d-flex justify-content-between">
-                                        <span>Final Price (Admin Set):</span>
-                                        <span><?php echo formatCurrency($order['admin_price']); ?></span>
-                                    </div>
-                                <?php endif; ?>
-                            <?php endif; ?>
+                            <p>Order ID: #<?php echo htmlspecialchars($order_id); ?></p>
                             <hr>
                             <div class="d-flex justify-content-between h5">
                                 <span>Total to Pay:</span>
                                 <span><?php echo formatCurrency($total_amount); ?></span>
                             </div>
                         </div>
-                        
                         <form method="post">
-                            <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-primary btn-lg">
-                                    Pay with PhonePe
-                                </button>
-                                <a href="<?php echo $is_direct_product_payment ? 'products.php' : 'orders.php'; ?>" class="btn btn-secondary">
-                                    <?php echo $is_direct_product_payment ? 'Back to Products' : 'Back to Orders'; ?>
-                                </a>
+                            <input type="hidden" name="order_id" value="<?php echo htmlspecialchars($order_id); ?>">
+                            <input type="hidden" name="product_id" value="<?php echo htmlspecialchars($product_id); ?>">
+                            <input type="hidden" name="quantity" value="<?php echo htmlspecialchars($quantity); ?>">
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg" id="payButton">Pay Now</button>
                             </div>
                         </form>
-                        
-                        <div class="alert alert-info mt-3">
-                            <small><strong>Note:</strong> You will be redirected to PhonePe for secure payment processing.</small>
-                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </main>
-
     <?php include 'includes/footer.php'; ?>
+
+    <?php if (!empty($redirectTokenUrl)): ?>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var tokenUrl = '<?php echo $redirectTokenUrl; ?>';
+            var orderId = '<?php echo $order_id; ?>';
+
+            function paymentCallback(response) {
+                window.location.href = 'payment-callback.php?order_id=' + orderId;
+            }
+
+            if (window.PhonePeCheckout && window.PhonePeCheckout.transact) {
+                document.getElementById('payButton').innerText = 'Opening Payment Window...';
+                document.getElementById('payButton').disabled = true;
+
+                window.PhonePeCheckout.transact({
+                    tokenUrl: tokenUrl,
+                    callback: paymentCallback,
+                    type: 'IFRAME'
+                });
+            } else {
+                alert('PhonePeCheckout library could not be loaded.');
+            }
+        });
+    </script>
+    <?php endif; ?>
 </body>
 </html>

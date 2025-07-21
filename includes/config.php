@@ -1,26 +1,40 @@
 <?php
 // Site Configuration
 define('SITE_NAME', 'Volt3dge: Precision in Every Layer');
-define('SITE_URL', 'http://localhost/3d-site');
+// For live, change this to 'https://volt3dge.com'
+define('SITE_URL', 'https://volt3dge.com'); 
 define('ADMIN_EMAIL', 'jayant@volt3dge.com');
 
 // File Upload Settings
-define('MAX_FILE_SIZE', 50 * 1024 * 1024); // 50MB
+define('MAX_FILE_SIZE', 50 * 1024 * 1024);
 define('ALLOWED_FILE_TYPES', ['stl', '3mf', 'obj', 'stp', 'step']);
 define('STL_UPLOAD_DIR', __DIR__ . '/../uploads/stl_files/');
 define('PRODUCT_IMAGE_DIR', __DIR__ . '/../uploads/products/');
 
-// PhonePe Configuration
-define('PHONEPE_MERCHANT_ID', 'YOUR_MERCHANT_ID'); // Replace with your PhonePe Merchant ID
-define('PHONEPE_SALT_KEY', 'YOUR_SALT_KEY'); // Replace with your PhonePe Salt Key
-define('PHONEPE_SALT_INDEX', 1);
-define('PHONEPE_BASE_URL', 'https://api-preprod.phonepe.com/apis/pg-sandbox'); // Use https://api.phonepe.com/apis/hermes for production
+// =================================================================
+// PHONEPE V2 CONFIGURATION - FILL THIS CAREFULLY
+// =================================================================
+
+// 1. CHOOSE THE CORRECT URL FOR YOUR ENVIRONMENT
+// For Sandbox/Testing:
+define('PHONEPE_BASE_URL', 'https://api-preprod.phonepe.com/apis/pg-sandbox');
+// For Production/Live, comment the line above and uncomment the line below:
+// define('PHONEPE_BASE_URL', 'https://api.phonepe.com/apis/identity-manager');
+
+
+
+
+// 2. PASTE THE MATCHING CREDENTIALS FROM THE CORRECT DASHBOARD
+define('PHONEPE_CLIENT_ID', 'TEST-M23LLUW7GSPOL_25071');      // Paste the Client ID that matches the URL above
+define('PHONEPE_CLIENT_SECRET', 'YzA0MjAyM2EtNTQ1Yi00MWRiLThmYWEtNzM0MjIyMGUwMThm'); // Paste the Client Secret that matches the URL above
+
+// =================================================================
 
 // Pricing Configuration
 define('BASE_PRICE_PER_GRAM', 2.50);
 define('SETUP_FEE', 50.00);
 
-// Display Errors (set to 0 in production)
+// Display Errors
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
