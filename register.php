@@ -9,26 +9,61 @@ if (isLoggedIn()) {
 
 $error = '';
 $success = '';
+$step = 1;
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $username = trim($_POST['username']);
-    $email = trim($_POST['email']);
-    $password = trim($_POST['password']);
-    $confirm_password = trim($_POST['confirm_password']);
-    // $phone = trim($_POST['phone']);
-    // $address = trim($_POST['address']);
-    
-    if (empty($username) || empty($email) || empty($password)) {
-        $error = 'Please fill in all required fields';
-    } elseif ($password !== $confirm_password) {
-        $error = 'Passwords do not match';
-    } elseif (strlen($password) < 6) {
-        $error = 'Password must be at least 6 characters long';
-    } else {
-        if (register($username, $email, $password)) {
-            $success = 'Registration successful! You can now login.';
+    if (isset($_POST['register'])) {
+        $username = trim($_POST['username']);
+        $email = trim($_POST['email']);
+        $password = trim($_POST['password']);
+        $confirm_password = trim($_POST['confirm_password']);
+
+        if (empty($username) || empty($email) || empty($password)) {
+            $error = 'Please fill in all required fields';
+        } elseif ($password !== $confirm_password) {
+            $error = 'Passwords do not match';
+        } elseif (strlen($password) < 6) {
+            $error = 'Password must be at least 6 characters long';
         } else {
-            $error = 'Email already exists or registration failed';
+            // Check if email already exists
+            $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+            $stmt->execute([$email]);
+            if ($stmt->fetch()) {
+                $error = 'Email already exists';
+            } else {
+                $_SESSION['registration_data'] = [
+                    'username' => $username,
+                    'email' => $email,
+                    'password' => $password
+                ];
+                
+                // Send OTP
+                $otp = rand(100000, 999999);
+                $_SESSION['otp'] = $otp;
+                
+                // In a real application, you would send the OTP via email or SMS
+                // For now, we'll just display it for testing purposes
+                $success = "Your OTP is: $otp";
+                
+                $step = 2;
+            }
+        }
+    } elseif (isset($_POST['verify_otp'])) {
+        $otp_entered = trim($_POST['otp']);
+        
+        if ($otp_entered == $_SESSION['otp']) {
+            $registration_data = $_SESSION['registration_data'];
+            if (register($registration_data['username'], $registration_data['email'], $registration_data['password'])) {
+                $success = 'Registration successful! You can now login.';
+                unset($_SESSION['registration_data']);
+                unset($_SESSION['otp']);
+                $step = 3;
+            } else {
+                $error = 'Registration failed';
+            }
+        } else {
+            $error = 'Invalid OTP';
+            $step = 2;
         }
     }
 }
@@ -83,10 +118,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <div class="alert alert-danger"><?php echo $error; ?></div>
             <?php endif; ?>
             
-            <?php if ($success): ?>
+            <?php if ($success && $step != 3): ?>
                 <div class="alert alert-success"><?php echo $success; ?></div>
             <?php endif; ?>
             
+            <?php if ($step == 1): ?>
             <form method="post">
                 <div class="mb-3">
                     <label for="username" class="form-label">Username *</label>
@@ -108,12 +144,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
                 </div>
                 
-                <button type="submit" class="btn btn-primary w-100 mb-3">Register</button>
+                <button type="submit" name="register" class="btn btn-primary w-100 mb-3">Register</button>
                 
                 <div class="text-center">
                     <p>Already have an account? <a href="login.php">Login here</a></p>
                 </div>
             </form>
+            <?php elseif ($step == 2): ?>
+            <form method="post">
+                <div class="mb-3">
+                    <label for="otp" class="form-label">Enter OTP</label>
+                    <input type="text" class="form-control" id="otp" name="otp" required>
+                </div>
+                <button type="submit" name="verify_otp" class="btn btn-primary w-100 mb-3">Verify OTP</button>
+                <div class="text-center">
+                    <p><a href="register.php">Resend OTP</a></p>
+                </div>
+            </form>
+            <?php elseif ($step == 3): ?>
+                <div class="alert alert-success">Registration successful! You can now <a href="login.php">login</a>.</div>
+            <?php endif; ?>
         </div>
     </div>
     
