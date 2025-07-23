@@ -10,6 +10,7 @@ define('MAX_FILE_SIZE', 50 * 1024 * 1024);
 define('ALLOWED_FILE_TYPES', ['stl', '3mf', 'obj', 'stp', 'step']);
 define('STL_UPLOAD_DIR', __DIR__ . '/../uploads/stl_files/');
 define('PRODUCT_IMAGE_DIR', __DIR__ . '/../uploads/products/');
+define('ORDER_ATTACHMENT_DIR', __DIR__ . '/../uploads/order_attachments/'); // New Directory
 
 // =================================================================
 // PHONEPE V2 CONFIGURATION - FILL THIS CAREFULLY
@@ -45,5 +46,8 @@ if (!file_exists(STL_UPLOAD_DIR)) {
 }
 if (!file_exists(PRODUCT_IMAGE_DIR)) {
     mkdir(PRODUCT_IMAGE_DIR, 0755, true);
+}
+if (!file_exists(ORDER_ATTACHMENT_DIR)) {
+    mkdir(ORDER_ATTACHMENT_DIR, 0755, true);
 }
 ?>

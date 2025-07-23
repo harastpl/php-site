@@ -53,26 +53,84 @@ function uploadFile($file, $allowedTypes = ['stl', '3mf', 'obj', 'stp', 'step'])
     }
 }
 
-// Get all products with stock info
-function getProducts($limit = null, $checkStock = false, $featuredOnly = false) {
+// Get all products with stock info and image gallery
+function getProducts($limit = null, $checkStock = false, $featuredOnly = false, $categoryId = null, $search = null, $sortBy = 'created_at', $sortOrder = 'DESC') {
     global $pdo;
-    $sql = "SELECT * FROM products";
+    $sql = "SELECT p.*, c.name as category_name, 
+                   (SELECT GROUP_CONCAT(pi.image_path ORDER BY pi.is_primary DESC, pi.sort_order ASC) 
+                    FROM product_images pi WHERE pi.product_id = p.id) as image_gallery
+            FROM products p 
+            LEFT JOIN categories c ON p.category_id = c.id";
     $conditions = [];
+    $params = [];
+    
     if ($checkStock) {
-        $conditions[] = "stock > 0";
+        $conditions[] = "p.stock > 0";
     }
     if ($featuredOnly) {
-        $conditions[] = "is_featured = 1";
+        $conditions[] = "p.is_featured = 1";
     }
+    if ($categoryId) {
+        $conditions[] = "p.category_id = ?";
+        $params[] = $categoryId;
+    }
+    if ($search) {
+        $conditions[] = "(p.name LIKE ? OR p.description LIKE ?)";
+        $params[] = "%$search%";
+        $params[] = "%$search%";
+    }
+    
     if (!empty($conditions)) {
         $sql .= " WHERE " . implode(" AND ", $conditions);
     }
-    $sql .= " ORDER BY created_at DESC";
+    
+    // Add sorting
+    $allowedSorts = ['name', 'price', 'created_at'];
+    $allowedOrders = ['ASC', 'DESC'];
+    
+    if (in_array($sortBy, $allowedSorts)) {
+        $sortColumn = $sortBy === 'created_at' ? 'p.created_at' : "p.$sortBy";
+    } else {
+        $sortColumn = 'p.created_at';
+    }
+    
+    if (!in_array($sortOrder, $allowedOrders)) {
+        $sortOrder = 'DESC';
+    }
+    
+    $sql .= " ORDER BY $sortColumn $sortOrder";
+    
     if ($limit) {
         $sql .= " LIMIT " . (int)$limit;
     }
-    $stmt = $pdo->query($sql);
+    
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Get all categories
+function getCategories() {
+    global $pdo;
+    $stmt = $pdo->query("SELECT * FROM categories WHERE is_active = 1 ORDER BY name");
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Get product images
+function getProductImages($productId) {
+    global $pdo;
+    $stmt = $pdo->prepare("SELECT * FROM product_images WHERE product_id = ? ORDER BY is_primary DESC, sort_order ASC");
+    $stmt->execute([$productId]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Get primary product image
+function getPrimaryProductImage($productId) {
+    global $pdo;
+    $stmt = $pdo->prepare("SELECT image_path FROM product_images WHERE product_id = ? AND is_primary = 1 LIMIT 1");
+    $stmt->execute([$productId]);
+    $result = $stmt->fetch();
+    return $result ? $result['image_path'] : null;
 }
 
 // Get featured products only
@@ -83,7 +141,15 @@ function getFeaturedProducts($limit = null) {
 // Get single product
 function getProduct($id) {
     global $pdo;
-    $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ?");
+    $stmt = $pdo->prepare("
+        SELECT p.*, 
+               c.name as category_name, 
+               c.enable_text_field, c.text_field_label, c.text_field_required,
+               c.enable_file_upload, c.file_upload_label, c.file_upload_required
+        FROM products p 
+        LEFT JOIN categories c ON p.category_id = c.id 
+        WHERE p.id = ?
+    ");
     $stmt->execute([$id]);
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }

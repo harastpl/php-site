@@ -5,66 +5,115 @@ require_once 'includes/auth.php';
 
 requireLogin();
 
-// Handle cart operations
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['add_to_cart'])) {
-        $product_id = (int)$_POST['product_id'];
-        $quantity = (int)$_POST['quantity'];
-        
-        // Add to cart (using session for now)
-        if (!isset($_SESSION['cart'])) {
-            $_SESSION['cart'] = [];
-        }
-        
-        if (isset($_SESSION['cart'][$product_id])) {
-            $_SESSION['cart'][$product_id] += $quantity;
-        } else {
-            $_SESSION['cart'][$product_id] = $quantity;
-        }
-        
-        $_SESSION['success'] = 'Product added to cart!';
-    } elseif (isset($_POST['update_quantity'])) {
-        $product_id = (int)$_POST['product_id'];
-        $quantity = (int)$_POST['quantity'];
-        
-        if ($quantity > 0) {
-            $_SESSION['cart'][$product_id] = $quantity;
-        } else {
-            unset($_SESSION['cart'][$product_id]);
-        }
-        
-        $_SESSION['success'] = 'Cart updated!';
-    } elseif (isset($_POST['remove_item'])) {
-        $product_id = (int)$_POST['product_id'];
-        unset($_SESSION['cart'][$product_id]);
-        $_SESSION['success'] = 'Item removed from cart!';
-    }
-    
-    redirect('cart.php');
+// Initialize cart if it doesn't exist
+if (!isset($_SESSION['cart'])) {
+    $_SESSION['cart'] = [];
 }
 
-// Get cart items
+// Handle cart operations
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    
+    // ACTION: Add to Cart or Buy Now
+    if (isset($_POST['add_to_cart']) || isset($_POST['buy_now'])) {
+        $product_id = (int)$_POST['product_id'];
+        $quantity = (int)$_POST['quantity'];
+        $custom_text = isset($_POST['custom_text']) ? trim($_POST['custom_text']) : null;
+        $custom_file = $_FILES['custom_file'] ?? null;
+        $custom_file_name = null;
+        
+        if ($custom_file && $custom_file['error'] == UPLOAD_ERR_OK) {
+            $target_dir = ORDER_ATTACHMENT_DIR;
+            $file_name = time() . '_' . uniqid() . '_' . basename($custom_file["name"]);
+            $target_file = $target_dir . $file_name;
+            if (!move_uploaded_file($custom_file["tmp_name"], $target_file)) {
+                $_SESSION['error'] = 'Could not upload custom file.';
+                redirect('product.php?id=' . $product_id);
+            }
+            $custom_file_name = $file_name;
+        }
+        
+        $cart_item_key = md5($product_id . ($custom_text ?? '') . ($custom_file_name ?? ''));
+
+        if (isset($_SESSION['cart'][$cart_item_key])) {
+            $_SESSION['cart'][$cart_item_key]['quantity'] += $quantity;
+        } else {
+            $_SESSION['cart'][$cart_item_key] = [
+                'product_id' => $product_id,
+                'quantity' => $quantity,
+                'custom_text' => $custom_text,
+                'custom_file' => $custom_file_name
+            ];
+        }
+        
+        if (isset($_POST['buy_now'])) {
+            redirect('checkout.php');
+        } else {
+            $_SESSION['success'] = 'Product added to cart!';
+            redirect('cart.php');
+        }
+    }
+    
+    // ACTION: Update Quantity
+    elseif (isset($_POST['update_quantity'])) {
+        $cart_item_key = $_POST['cart_item_key'];
+        $quantity = (int)$_POST['quantity'];
+        
+        if (isset($_SESSION['cart'][$cart_item_key])) {
+            if ($quantity > 0) {
+                $_SESSION['cart'][$cart_item_key]['quantity'] = $quantity;
+                $_SESSION['success'] = 'Cart updated!';
+            } else {
+                unset($_SESSION['cart'][$cart_item_key]);
+                $_SESSION['success'] = 'Item removed from cart!';
+            }
+        }
+        redirect('cart.php');
+    }
+    
+    // ACTION: Remove Item
+    elseif (isset($_POST['remove_item'])) {
+        $cart_item_key = $_POST['cart_item_key'];
+        unset($_SESSION['cart'][$cart_item_key]);
+        $_SESSION['success'] = 'Item removed from cart!';
+        redirect('cart.php');
+    }
+}
+
+// Get cart items for display
 $cart_items = [];
 $total = 0;
 
-if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
-    $product_ids = array_keys($_SESSION['cart']);
-    $placeholders = str_repeat('?,', count($product_ids) - 1) . '?';
+if (!empty($_SESSION['cart'])) {
+    $product_ids = array_unique(array_column($_SESSION['cart'], 'product_id'));
     
-    $stmt = $pdo->prepare("SELECT * FROM products WHERE id IN ($placeholders)");
-    $stmt->execute($product_ids);
-    $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    foreach ($products as $product) {
-        $quantity = $_SESSION['cart'][$product['id']];
-        $subtotal = $product['price'] * $quantity;
-        $total += $subtotal;
+    if(!empty($product_ids)) {
+        $placeholders = str_repeat('?,', count($product_ids) - 1) . '?';
         
-        $cart_items[] = [
-            'product' => $product,
-            'quantity' => $quantity,
-            'subtotal' => $subtotal
-        ];
+        $stmt = $pdo->prepare("SELECT * FROM products WHERE id IN ($placeholders)");
+        $stmt->execute($product_ids);
+        $products_db = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $products = [];
+        foreach($products_db as $p) {
+            $products[$p['id']] = $p;
+        }
+        
+        foreach ($_SESSION['cart'] as $key => $item) {
+            if (isset($products[$item['product_id']])) {
+                $product = $products[$item['product_id']];
+                $subtotal = $product['price'] * $item['quantity'];
+                $total += $subtotal;
+                
+                $cart_items[] = [
+                    'key' => $key,
+                    'product' => $product,
+                    'quantity' => $item['quantity'],
+                    'subtotal' => $subtotal,
+                    'custom_text' => $item['custom_text'],
+                    'custom_file' => $item['custom_file']
+                ];
+            }
+        }
     }
 }
 ?>
@@ -110,23 +159,29 @@ if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
                                     </div>
                                     <div class="col-md-4">
                                         <h5><?php echo htmlspecialchars($item['product']['name']); ?></h5>
-                                        <p class="text-muted"><?php echo formatCurrency($item['product']['price']); ?> each</p>
+                                        <p class="text-muted mb-1"><?php echo formatCurrency($item['product']['price']); ?> each</p>
+                                        <?php if ($item['custom_text']): ?>
+                                            <small class="d-block text-info"><strong>Note:</strong> <?php echo nl2br(htmlspecialchars($item['custom_text'])); ?></small>
+                                        <?php endif; ?>
+                                        <?php if ($item['custom_file']): ?>
+                                            <small class="d-block text-info"><strong>File:</strong> <?php echo htmlspecialchars($item['custom_file']); ?></small>
+                                        <?php endif; ?>
                                     </div>
                                     <div class="col-md-3">
                                         <form method="post" class="d-flex align-items-center">
-                                            <input type="hidden" name="product_id" value="<?php echo $item['product']['id']; ?>">
+                                            <input type="hidden" name="cart_item_key" value="<?php echo $item['key']; ?>">
                                             <input type="number" name="quantity" value="<?php echo $item['quantity']; ?>" 
                                                    min="1" max="<?php echo $item['product']['stock']; ?>" 
                                                    class="form-control me-2" style="width: 80px;">
                                             <button type="submit" name="update_quantity" class="btn btn-sm btn-outline-primary">Update</button>
                                         </form>
                                     </div>
-                                    <div class="col-md-2">
+                                    <div class="col-md-2 text-end">
                                         <strong><?php echo formatCurrency($item['subtotal']); ?></strong>
                                     </div>
-                                    <div class="col-md-1">
+                                    <div class="col-md-1 text-end">
                                         <form method="post">
-                                            <input type="hidden" name="product_id" value="<?php echo $item['product']['id']; ?>">
+                                            <input type="hidden" name="cart_item_key" value="<?php echo $item['key']; ?>">
                                             <button type="submit" name="remove_item" class="btn btn-sm btn-outline-danger">×</button>
                                         </form>
                                     </div>

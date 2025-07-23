@@ -5,28 +5,12 @@ require_once 'includes/auth.php';
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $product = getProduct($id);
+$productImages = getProductImages($id);
 
 if (!$product) {
     $_SESSION['error'] = 'Product not found.';
     header("Location: products.php");
     exit();
-}
-
-// Handle add to cart
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
-    if (!isLoggedIn()) {
-        $_SESSION['error'] = 'Please login to add items to cart.';
-        header("Location: login.php");
-        exit();
-    }
-    
-    $quantity = (int)$_POST['quantity'];
-    if ($quantity > 0 && $quantity <= $product['stock']) {
-        // Add to cart logic here
-        $_SESSION['success'] = 'Product added to cart successfully!';
-    } else {
-        $_SESSION['error'] = 'Invalid quantity or insufficient stock.';
-    }
 }
 ?>
 <!DOCTYPE html>
@@ -43,23 +27,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
     <?php include 'includes/header.php'; ?>
 
     <main class="container mt-5 mb-5">
-        <?php if (isset($_SESSION['success'])): ?>
-            <div class="alert alert-success">
-                <?php echo $_SESSION['success']; unset($_SESSION['success']); ?>
-            </div>
-        <?php endif; ?>
-        
-        <?php if (isset($_SESSION['error'])): ?>
-            <div class="alert alert-danger">
-                <?php echo $_SESSION['error']; unset($_SESSION['error']); ?>
-            </div>
-        <?php endif; ?>
-
         <div class="row">
             <div class="col-md-6">
-                <img src="uploads/products/<?php echo htmlspecialchars($product['image']); ?>" 
-                     alt="<?php echo htmlspecialchars($product['name']); ?>" 
-                     class="img-fluid rounded shadow">
+                <div class="product-image-gallery">
+                    <?php if (!empty($productImages)): ?>
+                        <img id="mainImage" src="uploads/products/<?php echo htmlspecialchars($productImages[0]['image_path']); ?>" 
+                             alt="<?php echo htmlspecialchars($product['name']); ?>" 
+                             class="product-image-main shadow">
+                        
+                        <?php if (count($productImages) > 1): ?>
+                            <div class="product-image-thumbnails">
+                                <?php foreach ($productImages as $index => $image): ?>
+                                    <img src="uploads/products/<?php echo htmlspecialchars($image['image_path']); ?>" 
+                                         alt="<?php echo htmlspecialchars($product['name']); ?>" 
+                                         class="product-image-thumb <?php echo $index === 0 ? 'active' : ''; ?>"
+                                         onclick="changeMainImage(this, '<?php echo htmlspecialchars($image['image_path']); ?>')">
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    <?php else: ?>
+                        <img src="uploads/products/<?php echo htmlspecialchars($product['image']); ?>" 
+                             alt="<?php echo htmlspecialchars($product['name']); ?>" 
+                             class="product-image-main shadow">
+                    <?php endif; ?>
+                </div>
             </div>
             <div class="col-md-6">
                 <h1><?php echo htmlspecialchars($product['name']); ?></h1>
@@ -76,8 +67,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
                 </div>
                 
                 <?php if ($product['stock'] > 0): ?>
-                    <form method="post" action="cart.php" class="mb-3">
+                    <form method="post" action="cart.php" enctype="multipart/form-data" class="mb-3">
                         <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>">
+
+                        <?php if ($product['enable_text_field']): ?>
+                            <div class="mb-3">
+                                <label for="custom_text" class="form-label"><?php echo htmlspecialchars($product['text_field_label']); ?><?php echo $product['text_field_required'] ? ' *' : ''; ?></label>
+                                <textarea class="form-control" id="custom_text" name="custom_text" <?php echo $product['text_field_required'] ? 'required' : ''; ?>></textarea>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if ($product['enable_file_upload']): ?>
+                            <div class="mb-3">
+                                <label for="custom_file" class="form-label"><?php echo htmlspecialchars($product['file_upload_label']); ?><?php echo $product['file_upload_required'] ? ' *' : ''; ?></label>
+                                <input type="file" class="form-control" id="custom_file" name="custom_file" <?php echo $product['file_upload_required'] ? 'required' : ''; ?>>
+                            </div>
+                        <?php endif; ?>
                         <div class="row align-items-end">
                             <div class="col-md-4">
                                 <label for="quantity" class="form-label">Quantity</label>
@@ -86,9 +91,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
                             </div>
                             <div class="col-md-8">
                                 <div class="d-grid gap-2 d-md-flex">
-                                    <button type="submit" name="add_to_cart" class="btn btn-primary" onclick="addToCart(event)">Add to Cart</button>
-                                    <a href="address-form.php?redirect=<?php echo urlencode('payment.php?product_id=' . $product['id'] . '&quantity=1'); ?>" 
-                                       class="btn btn-gradient-success buy-now-btn" onclick="updateBuyNowLink(this)">Buy Now</a>
+                                    <button type="submit" name="add_to_cart" class="btn btn-primary">Add to Cart</button>
+                                    <button type="submit" name="buy_now" class="btn btn-gradient-success buy-now-btn">Buy Now</button>
                                 </div>
                             </div>
                         </div>
@@ -111,16 +115,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
     <?php include 'includes/footer.php'; ?>
 
     <script>
-        function updateBuyNowLink(element) {
-            const quantity = document.getElementById('quantity').value;
-            const productId = <?php echo $product['id']; ?>;
-            element.href = `address-form.php?redirect=${encodeURIComponent('payment.php?product_id=' + productId + '&quantity=' + quantity)}`;
+        function changeMainImage(thumbnail, imagePath) {
+            document.getElementById('mainImage').src = 'uploads/products/' + imagePath;
+            
+            document.querySelectorAll('.product-image-thumb').forEach(thumb => {
+                thumb.classList.remove('active');
+            });
+            thumbnail.classList.add('active');
         }
         
-        document.getElementById('quantity').addEventListener('change', function() {
-            const buyNowBtn = document.querySelector('a[href*="payment.php"]');
-            updateBuyNowLink(buyNowBtn);
-        });
+        // Auto-carousel for the main product image
+        const productImages = <?php echo json_encode(array_column($productImages, 'image_path')); ?>;
+        const mainImage = document.getElementById('mainImage');
+        let currentImageIndex = 0;
+
+        if (mainImage && productImages.length > 1) {
+            setInterval(() => {
+                mainImage.style.opacity = 0; // Start fade out
+                setTimeout(() => {
+                    currentImageIndex = (currentImageIndex + 1) % productImages.length;
+                    mainImage.src = 'uploads/products/' + productImages[currentImageIndex];
+                    mainImage.style.opacity = 1; // Start fade in
+                }, 100); // Wait for fade out to complete
+            }, 2500); // Set interval to 1 second
+        }
     </script>
 </body>
 </html>

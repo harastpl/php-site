@@ -1,9 +1,11 @@
 <?php
-require_once '../includes/config.php';
-require_once '../includes/functions.php';
-require_once '../includes/auth.php';
+require_once '../../includes/config.php';
+require_once '../../includes/functions.php';
+require_once '../../includes/auth.php';
 
 requireAdmin();
+
+$categories = getCategories();
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $name = trim($_POST['name']);
@@ -11,9 +13,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $price = trim($_POST['price']);
     $stock = (int)$_POST['stock'];
     $low_stock_threshold = (int)$_POST['low_stock_threshold'];
-    $image = $_FILES['image'];
+    $category_id = (int)$_POST['category_id'];
+    $is_featured = (int)$_POST['is_featured'];
+    $images = $_FILES['images'];
+    $stl_file = $_FILES['stl_file'];
     
     $errors = [];
+    $stl_file_name = null;
+
+    // Handle STL upload if provided
+    if ($stl_file['error'] != UPLOAD_ERR_NO_FILE) {
+        $uploadResult = uploadFile($stl_file, ALLOWED_FILE_TYPES);
+        if ($uploadResult['success']) {
+            $stl_file_name = $uploadResult['file_name'];
+        } else {
+            $errors[] = 'STL file upload error: ' . $uploadResult['message'];
+        }
+    }
     
     // Validate inputs
     if (empty($name)) {
@@ -32,50 +48,72 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $errors[] = 'Stock cannot be negative';
     }
     
-    if ($image['error'] == UPLOAD_ERR_NO_FILE) {
-        $errors[] = 'Product image is required';
+    if (empty($category_id)) {
+        $errors[] = 'Please select a category';
+    }
+    
+    if (empty($images['name'][0])) {
+        $errors[] = 'At least one product image is required';
     }
     
     if (empty($errors)) {
-        // Handle image upload
+        // Handle multiple image uploads
+        $uploadedImages = [];
         $target_dir = PRODUCT_IMAGE_DIR;
-        $file_name = time() . '_' . basename($image["name"]);
-        $target_file = $target_dir . $file_name;
-        $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
         
-        // Check if image file is a actual image
-        $check = getimagesize($image["tmp_name"]);
-        if ($check === false) {
-            $errors[] = 'File is not an image.';
-        }
-        
-        // Check file size (5MB max)
-        if ($image["size"] > 5000000) {
-            $errors[] = 'Sorry, your file is too large. Max 5MB allowed.';
-        }
-        
-        // Allow certain file formats
-        $allowed_types = ['jpg', 'jpeg', 'png', 'gif'];
-        if (!in_array($imageFileType, $allowed_types)) {
-            $errors[] = 'Sorry, only JPG, JPEG, PNG & GIF files are allowed.';
-        }
-        
-        if (empty($errors)) {
-            if (move_uploaded_file($image["tmp_name"], $target_file)) {
-                // Insert product into database
-                try {
-                    $is_featured = (int)$_POST['is_featured'];
-                    $stmt = $pdo->prepare("INSERT INTO products (name, description, price, stock, low_stock_threshold, image, is_featured) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                    $stmt->execute([$name, $description, $price, $stock, $low_stock_threshold, $file_name, $is_featured]);
-                    
-                    $_SESSION['success'] = 'Product added successfully!';
-                    redirect('index.php');
-                } catch (PDOException $e) {
-                    $errors[] = 'Database error: ' . $e->getMessage();
+        for ($i = 0; $i < count($images['name']); $i++) {
+            if ($images['error'][$i] == UPLOAD_ERR_OK) {
+                $file_name = time() . '_' . $i . '_' . basename($images["name"][$i]);
+                $target_file = $target_dir . $file_name;
+                $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+                
+                $check = getimagesize($images["tmp_name"][$i]);
+                if ($check === false) {
+                    $errors[] = 'File ' . $images["name"][$i] . ' is not an image.';
+                    continue;
                 }
-            } else {
-                $errors[] = 'Sorry, there was an error uploading your file.';
+                
+                if ($images["size"][$i] > 5000000) {
+                    $errors[] = 'File ' . $images["name"][$i] . ' is too large. Max 5MB allowed.';
+                    continue;
+                }
+                
+                $allowed_types = ['jpg', 'jpeg', 'png', 'gif'];
+                if (!in_array($imageFileType, $allowed_types)) {
+                    $errors[] = 'File ' . $images["name"][$i] . ' has invalid format. Only JPG, JPEG, PNG & GIF files are allowed.';
+                    continue;
+                }
+                
+                if (move_uploaded_file($images["tmp_name"][$i], $target_file)) {
+                    $uploadedImages[] = [
+                        'file_name' => $file_name,
+                        'is_primary' => $i === 0 ? 1 : 0,
+                        'sort_order' => $i
+                    ];
+                }
             }
+        }
+        
+        if (!empty($uploadedImages) && empty($errors)) {
+            try {
+                // Insert product into database
+                $stmt = $pdo->prepare("INSERT INTO products (name, description, price, stock, low_stock_threshold, category_id, is_featured, image, stl_file) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$name, $description, $price, $stock, $low_stock_threshold, $category_id, $is_featured, $uploadedImages[0]['file_name'], $stl_file_name]);
+                $product_id = $pdo->lastInsertId();
+                
+                // Insert product images
+                foreach ($uploadedImages as $image) {
+                    $stmt = $pdo->prepare("INSERT INTO product_images (product_id, image_path, is_primary, sort_order) VALUES (?, ?, ?, ?)");
+                    $stmt->execute([$product_id, $image['file_name'], $image['is_primary'], $image['sort_order']]);
+                }
+                
+                $_SESSION['success'] = 'Product added successfully!';
+                redirect('index.php');
+            } catch (PDOException $e) {
+                $errors[] = 'Database error: ' . $e->getMessage();
+            }
+        } elseif (empty($uploadedImages)) {
+            $errors[] = 'No images were uploaded successfully.';
         }
     }
 }
@@ -87,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Product | <?php echo SITE_NAME; ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="../assets/css/styles.css" rel="stylesheet">
+    <link href="../../assets/css/styles.css" rel="stylesheet">
 </head>
 <body>
     <?php include '../includes/admin-header.php'; ?>
@@ -125,23 +163,37 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <div class="row">
                         <div class="col-md-4">
                             <div class="mb-3">
+                                <label for="category_id" class="form-label">Category</label>
+                                <select class="form-select" id="category_id" name="category_id" required>
+                                    <option value="">Select Category</option>
+                                    <?php foreach ($categories as $category): ?>
+                                        <option value="<?php echo $category['id']; ?>"><?php echo htmlspecialchars($category['name']); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
                                 <label for="price" class="form-label">Price (₹)</label>
                                 <input type="number" step="0.01" class="form-control" id="price" name="price" required>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-2">
                             <div class="mb-3">
                                 <label for="stock" class="form-label">Stock Quantity</label>
                                 <input type="number" class="form-control" id="stock" name="stock" value="0" required>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-2">
                             <div class="mb-3">
                                 <label for="low_stock_threshold" class="form-label">Low Stock Alert Threshold</label>
                                 <input type="number" class="form-control" id="low_stock_threshold" name="low_stock_threshold" value="10" required>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="is_featured" class="form-label">Featured Product</label>
                                 <select class="form-select" id="is_featured" name="is_featured">
@@ -154,9 +206,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     </div>
                     
                     <div class="mb-3">
-                        <label for="image" class="form-label">Product Image</label>
-                        <input type="file" class="form-control" id="image" name="image" required>
-                        <div class="form-text">Upload a high-quality image of the product (max 5MB).</div>
+                        <label for="images" class="form-label">Product Images</label>
+                        <input type="file" class="form-control" id="images" name="images[]" multiple required>
+                        <div class="form-text">Upload high-quality images of the product (max 5MB each). First image will be the primary image.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="stl_file" class="form-label">Product STL File (Optional)</label>
+                        <input type="file" class="form-control" id="stl_file" name="stl_file" accept=".stl,.3mf,.obj,.stp,.step">
+                        <div class="form-text">Upload the STL file for this product if it's a standard 3D model.</div>
                     </div>
                     
                     <button type="submit" class="btn btn-primary">Add Product</button>

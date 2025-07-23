@@ -15,49 +15,41 @@ if (!empty($user['address'])) {
     $address = json_decode($user['address'], true);
 }
 
-// Get cart items or single product
+// Get cart items
 $cart_items = [];
 $total = 0;
 
-if (isset($_GET['product_id']) && isset($_GET['quantity'])) {
-    // Single product checkout
-    $product_id = (int)$_GET['product_id'];
-    $quantity = (int)$_GET['quantity'];
+if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
+    $product_ids = array_unique(array_column($_SESSION['cart'], 'product_id'));
     
-    $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ?");
-    $stmt->execute([$product_id]);
-    $product = $stmt->fetch();
-    
-    if ($product) {
-        $subtotal = $product['price'] * $quantity;
-        $total = $subtotal;
-        
-        $cart_items[] = [
-            'product' => $product,
-            'quantity' => $quantity,
-            'subtotal' => $subtotal
-        ];
-    }
-} else {
-    // Cart checkout
-    if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
-        $product_ids = array_keys($_SESSION['cart']);
+    if(!empty($product_ids)) {
         $placeholders = str_repeat('?,', count($product_ids) - 1) . '?';
         
         $stmt = $pdo->prepare("SELECT * FROM products WHERE id IN ($placeholders)");
         $stmt->execute($product_ids);
-        $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        foreach ($products as $product) {
-            $quantity = $_SESSION['cart'][$product['id']];
-            $subtotal = $product['price'] * $quantity;
-            $total += $subtotal;
-            
-            $cart_items[] = [
-                'product' => $product,
-                'quantity' => $quantity,
-                'subtotal' => $subtotal
-            ];
+        $products_db = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Manually create an associative array with product ID as the key
+        $products = [];
+        foreach($products_db as $p) {
+            $products[$p['id']] = $p;
+        }
+
+        foreach ($_SESSION['cart'] as $key => $item) {
+            if (isset($products[$item['product_id']])) {
+                $product = $products[$item['product_id']];
+                $subtotal = $product['price'] * $item['quantity'];
+                $total += $subtotal;
+                
+                $cart_items[] = [
+                    'key' => $key,
+                    'product' => $product,
+                    'quantity' => $item['quantity'],
+                    'subtotal' => $subtotal,
+                    'custom_text' => $item['custom_text'],
+                    'custom_file' => $item['custom_file']
+                ];
+            }
         }
     }
 }
@@ -80,10 +72,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
         $stmt->execute([$_SESSION['user_id'], $total, $total]);
         $order_id = $pdo->lastInsertId();
         
-        // Add order items
+        // Add order items with custom fields
         foreach ($cart_items as $item) {
-            $stmt = $pdo->prepare("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$order_id, $item['product']['id'], $item['quantity'], $item['product']['price']]);
+            $stmt = $pdo->prepare("
+                INSERT INTO order_items 
+                (order_id, product_id, quantity, price, custom_text, custom_file_upload) 
+                VALUES (?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->execute([
+                $order_id, 
+                $item['product']['id'], 
+                $item['quantity'], 
+                $item['product']['price'],
+                $item['custom_text'],
+                $item['custom_file']
+            ]);
         }
         
         // Clear cart
@@ -120,7 +123,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
 
         <div class="row">
             <div class="col-lg-8">
-                <!-- Delivery Address -->
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Delivery Address</h5>
@@ -145,7 +147,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
                     </div>
                 </div>
 
-                <!-- Order Items -->
                 <div class="card">
                     <div class="card-header">
                         <h5 class="mb-0">Order Items</h5>

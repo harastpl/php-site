@@ -51,21 +51,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ($uploadResult['success']) {
             try {
                 // Calculate estimated price (this would be refined based on actual file analysis)
-                $basePrice = SETUP_FEE + (BASE_PRICE_PER_GRAM * 50 * $quantity); // Assuming 50g average
-                
-                $totalPrice = $basePrice;
-                
-                // Apply bulk discount
-                $discount = calculateBulkDiscount($quantity, $totalPrice);
+                // Set initial price to 0 for admin review
+                $totalPrice = 0;
+                $discount = ['amount' => 0, 'final_total' => 0];
                 
                 // Create order
-                $stmt = $pdo->prepare("INSERT INTO orders (user_id, total, discount_amount, final_total, status) VALUES (?, ?, ?, ?, 'pending')");
+                $stmt = $pdo->prepare("INSERT INTO orders (user_id, total, discount_amount, final_total, status, payment_status) VALUES (?, ?, ?, ?, 'pending', 'pending')");
                 $stmt->execute([$_SESSION['user_id'], $totalPrice, $discount['amount'], $discount['final_total']]);
                 $orderId = $pdo->lastInsertId();
                 
                 // Create order item
                 $stmt = $pdo->prepare("INSERT INTO order_items (order_id, quantity, price, custom_stl, custom_notes, infill_percentage, layer_height, support_needed, color_id, material_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$orderId, $quantity, $discount['final_total'], $uploadResult['file_name'], $notes, $infill, $layer_height, $support_needed, $color_id, $material_id]);
+                $stmt->execute([$orderId, $quantity, 0, $uploadResult['file_name'], $notes, $infill, $layer_height, $support_needed, $color_id, $material_id]);
                 
                 // Send notification email
                 $colorName = '';
@@ -91,13 +88,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $message .= "Infill: {$infill}%\n";
                 $message .= "Layer Height: {$layer_height}mm\n";
                 $message .= "Support Needed: " . ($support_needed ? 'Yes' : 'No') . "\n";
-                $message .= "Estimated Total: " . formatCurrency($discount['final_total']) . "\n";
+                $message .= "Price: Pending admin review\n";
                 $message .= "Notes: $notes\n";
                 $message .= "File: " . SITE_URL . "/uploads/stl_files/" . $uploadResult['file_name'] . "\n";
                 
                 sendEmailNotification(ADMIN_EMAIL, $subject, $message);
                 
-                $_SESSION['success'] = 'Your custom order has been submitted successfully! Order ID: #' . $orderId . '. We will contact you soon with final pricing and timeline.';
+                $_SESSION['success'] = 'Your custom order has been submitted successfully! Order ID: #' . $orderId . '. We will review your order and contact you with pricing details.';
                 redirect('orders.php');
             } catch (PDOException $e) {
                 $errors[] = 'Database error: ' . $e->getMessage();
@@ -179,7 +176,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <?php endif; ?>
                 
                 <form method="post" enctype="multipart/form-data">
-                    <!-- File Upload Section -->
                     <div class="specification-card">
                         <h4 class="mb-3">Upload Your Design</h4>
                         <div class="mb-3">
@@ -196,7 +192,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         </div>
                     </div>
 
-                    <!-- Print Specifications -->
                     <div class="specification-card">
                         <h4 class="mb-3">Print Specifications</h4>
                         
@@ -238,7 +233,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         </div>
                     </div>
 
-                    <!-- Material Selection -->
                     <div class="specification-card">
                         <h4 class="mb-3">Material & Color</h4>
                         
@@ -248,7 +242,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <option value="">Select Material</option>
                                 <?php foreach ($materials as $material): ?>
                                     <option value="<?php echo $material['id']; ?>" 
-                                            <?php echo (strtolower($material['name']) == 'pla') ? 'selected' : ''; ?>>
+                                            <?php echo (stripos($material['name'], 'pla') !== false) ? 'selected' : ''; ?>>
                                         <?php echo htmlspecialchars($material['name']); ?> 
                                         (<?php echo htmlspecialchars($material['description']); ?>)
                                     </option>
@@ -258,13 +252,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         </div>
                         
                         <div class="mb-3">
-                            <label class="form-label">Color *</label>
+                            <label class="form-label">Color (Default White)*</label>
                             <div class="color-selection">
                                 <?php foreach ($colors as $color): ?>
                                     <label class="color-option-label">
                                         <input type="radio" name="color_id" value="<?php echo $color['id']; ?>" 
-                                               style="display: none;" required>
-                                        <div class="color-option" 
+                                               style="display: none;" required <?php echo (strtolower($color['name']) == 'white') ? 'checked' : ''; ?>>
+                                        <div class="color-option <?php echo (strtolower($color['name']) == 'white') ? 'selected' : ''; ?>" 
                                              style="background-color: <?php echo $color['hex_code']; ?>"
                                              title="<?php echo htmlspecialchars($color['name']); ?>"
                                              onclick="selectColor(this)"></div>
@@ -275,7 +269,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         </div>
                     </div>
 
-                    <!-- Additional Notes -->
                     <div class="specification-card">
                         <h4 class="mb-3">Additional Information</h4>
                         <div class="mb-3">
@@ -286,7 +279,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         
                         <div class="price-display">
                             <h5>Estimated Price</h5>
-                            <p class="price-note">We will contact you soon with final pricing and timeline. Total will be visible once admin reviews your order.</p>
+                            <p class="price-note">We will review your order and provide final pricing within 24 hours. You'll receive a notification once pricing is available.</p>
                         </div>
                     </div>
                     

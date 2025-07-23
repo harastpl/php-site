@@ -142,11 +142,11 @@ if (isset($_SESSION['flash_message'])) {
                                 <?php echo ucfirst($order['status']); ?>
                             </span>
                             <span class="badge status-badge bg-<?php 
-                                echo $order['payment_status'] == 'Pending' ? 'secondary' : 
-                                     ($order['payment_status'] == 'Paid' ? 'success' : 
-                                     ($order['payment_status'] == 'Failed' ? 'danger' : 'warning')); 
+                                echo strtolower($order['payment_status']) == 'pending' ? 'warning' : 
+                                     (strtolower($order['payment_status']) == 'paid' ? 'success' : 
+                                     (strtolower($order['payment_status']) == 'failed' ? 'danger' : 'secondary')); 
                             ?>">
-                                Payment: <?php echo ucfirst(strtolower($order['payment_status'])); ?>
+                                Payment: <?php echo ucfirst($order['payment_status']); ?>
                             </span>
                         </div>
                     </div>
@@ -206,12 +206,12 @@ if (isset($_SESSION['flash_message'])) {
                         <?php endif; ?>
                         
                         <div class="mt-3 text-end">
-                            <?php if ($order['payment_status'] == 'Pending' && $order['status'] == 'processing' && $order['final_total'] > 0): ?>
+                            <?php if (strtolower($order['payment_status']) == 'pending' && $order['status'] == 'processing' && $order['final_total'] > 0): ?>
                                 <a href="payment.php?order_id=<?php echo $order['id']; ?>" class="btn btn-success">
                                     <i class="fas fa-credit-card"></i> Pay Now
                                 </a>
-                            <?php elseif ($order['status'] == 'pending' && $order['final_total'] == 0): ?>
-                                <span class="badge bg-info">Waiting for admin pricing</span>
+                            <?php elseif ($order['status'] == 'pending' && ($order['final_total'] == 0 || $order['admin_price'] === null)): ?>
+                                <span class="badge bg-info">Waiting for review</span>
                             <?php endif; ?>
                         </div>
                     </div>

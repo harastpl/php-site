@@ -12,6 +12,24 @@ $quantity = (int)($_REQUEST['quantity'] ?? 1);
 $total_amount = 0;
 $redirectTokenUrl = '';
 $merchantOrderId = '';
+$order = null;
+
+// Get order details first if order_id is provided
+if ($order_id) {
+    $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ? AND user_id = ?");
+    $stmt->execute([$order_id, $_SESSION['user_id']]);
+    $order = $stmt->fetch();
+    if ($order) {
+        $total_amount = $order['final_total'];
+    }
+} elseif ($product_id) {
+    $stmt = $pdo->prepare("SELECT price FROM products WHERE id = ?");
+    $stmt->execute([$product_id]);
+    $product = $stmt->fetch();
+    if ($product) {
+        $total_amount = $product['price'] * $quantity;
+    }
+}
 
 // This block only runs when the "Pay Now" button is clicked
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -35,13 +53,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
     
-    // Now that we have a definite order_id, fetch its details to get the final amount
-    if ($order_id) {
+    // Refresh order details after potential creation
+    if ($order_id && !$order) {
         $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ? AND user_id = ?");
         $stmt->execute([$order_id, $_SESSION['user_id']]);
         $order = $stmt->fetch();
         if ($order) {
-            $total_amount = $order['final_total']; // Use the final_total from the order
+            $total_amount = $order['final_total'];
         }
     }
 
@@ -87,19 +105,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $redirectTokenUrl = $getPaymentInfo['redirectUrl'];
     } else {
         $_SESSION['error'] = 'Gateway Error: ' . ($getPaymentInfo['error'] ?? 'Could not initiate payment.');
-    }
-} else {
-    // This is the GET request part - just display the page details
-    if ($order_id) {
-        $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ? AND user_id = ?");
-        $stmt->execute([$order_id, $_SESSION['user_id']]);
-        $order = $stmt->fetch();
-        if ($order) $total_amount = $order['final_total'];
-    } elseif ($product_id) {
-        $stmt = $pdo->prepare("SELECT price FROM products WHERE id = ?");
-        $stmt->execute([$product_id]);
-        $product = $stmt->fetch();
-        if ($product) $total_amount = $product['price'] * $quantity;
     }
 }
 ?>

@@ -1,12 +1,14 @@
 <?php
-require_once '../includes/config.php';
-require_once '../includes/functions.php';
-require_once '../includes/auth.php';
+require_once '../../includes/config.php';
+require_once '../../includes/functions.php';
+require_once '../../includes/auth.php';
 
 requireAdmin();
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $product = getProduct($id);
+$categories = getCategories();
+$productImages = getProductImages($id);
 
 if (!$product) {
     $_SESSION['error'] = 'Product not found.';
@@ -19,7 +21,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $price = trim($_POST['price']);
     $stock = (int)$_POST['stock'];
     $low_stock_threshold = (int)$_POST['low_stock_threshold'];
-    $image = $_FILES['image'];
+    $category_id = (int)$_POST['category_id'];
+    $is_featured = (int)$_POST['is_featured'];
+    $images = $_FILES['images'];
     
     $errors = [];
     
@@ -40,49 +44,79 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $errors[] = 'Stock cannot be negative';
     }
     
+    if (empty($category_id)) {
+        $errors[] = 'Please select a category';
+    }
+    
     if (empty($errors)) {
-        $imageName = $product['image']; // Keep existing image by default
-        
-        // Handle image upload if new image provided
-        if ($image['error'] != UPLOAD_ERR_NO_FILE) {
+        // Handle new image uploads if provided
+        if (!empty($images['name'][0])) {
+            $uploadedImages = [];
             $target_dir = PRODUCT_IMAGE_DIR;
-            $file_name = time() . '_' . basename($image["name"]);
-            $target_file = $target_dir . $file_name;
-            $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
             
-            // Validate image
-            $check = getimagesize($image["tmp_name"]);
-            if ($check === false) {
-                $errors[] = 'File is not an image.';
+            for ($i = 0; $i < count($images['name']); $i++) {
+                if ($images['error'][$i] == UPLOAD_ERR_OK) {
+                    $file_name = time() . '_' . $i . '_' . basename($images["name"][$i]);
+                    $target_file = $target_dir . $file_name;
+                    $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+                    
+                    // Validate image
+                    $check = getimagesize($images["tmp_name"][$i]);
+                    if ($check === false) {
+                        $errors[] = 'File ' . $images["name"][$i] . ' is not an image.';
+                        continue;
+                    }
+                    
+                    if ($images["size"][$i] > 5000000) {
+                        $errors[] = 'File ' . $images["name"][$i] . ' is too large. Max 5MB allowed.';
+                        continue;
+                    }
+                    
+                    $allowed_types = ['jpg', 'jpeg', 'png', 'gif'];
+                    if (!in_array($imageFileType, $allowed_types)) {
+                        $errors[] = 'File ' . $images["name"][$i] . ' has invalid format.';
+                        continue;
+                    }
+                    
+                    if (move_uploaded_file($images["tmp_name"][$i], $target_file)) {
+                        $uploadedImages[] = [
+                            'file_name' => $file_name,
+                            'is_primary' => $i === 0 ? 1 : 0,
+                            'sort_order' => $i
+                        ];
+                    }
+                }
             }
             
-            if ($image["size"] > 5000000) {
-                $errors[] = 'Sorry, your file is too large. Max 5MB allowed.';
-            }
-            
-            $allowed_types = ['jpg', 'jpeg', 'png', 'gif'];
-            if (!in_array($imageFileType, $allowed_types)) {
-                $errors[] = 'Sorry, only JPG, JPEG, PNG & GIF files are allowed.';
-            }
-            
-            if (empty($errors)) {
-                if (move_uploaded_file($image["tmp_name"], $target_file)) {
-                    // Delete old image
-                    $oldImagePath = $target_dir . $product['image'];
+            if (!empty($uploadedImages) && empty($errors)) {
+                // Delete old images
+                foreach ($productImages as $oldImage) {
+                    $oldImagePath = $target_dir . $oldImage['image_path'];
                     if (file_exists($oldImagePath)) {
                         unlink($oldImagePath);
                     }
-                    $imageName = $file_name;
-                } else {
-                    $errors[] = 'Sorry, there was an error uploading your file.';
                 }
+                
+                // Delete old image records
+                $stmt = $pdo->prepare("DELETE FROM product_images WHERE product_id = ?");
+                $stmt->execute([$id]);
+                
+                // Insert new images
+                foreach ($uploadedImages as $image) {
+                    $stmt = $pdo->prepare("INSERT INTO product_images (product_id, image_path, is_primary, sort_order) VALUES (?, ?, ?, ?)");
+                    $stmt->execute([$id, $image['file_name'], $image['is_primary'], $image['sort_order']]);
+                }
+                
+                // Update main product image
+                $stmt = $pdo->prepare("UPDATE products SET image = ? WHERE id = ?");
+                $stmt->execute([$uploadedImages[0]['file_name'], $id]);
             }
         }
         
         if (empty($errors)) {
             try {
-                $stmt = $pdo->prepare("UPDATE products SET name = ?, description = ?, price = ?, stock = ?, low_stock_threshold = ?, image = ? WHERE id = ?");
-                $stmt->execute([$name, $description, $price, $stock, $low_stock_threshold, $imageName, $id]);
+                $stmt = $pdo->prepare("UPDATE products SET name = ?, description = ?, price = ?, stock = ?, low_stock_threshold = ?, category_id = ?, is_featured = ? WHERE id = ?");
+                $stmt->execute([$name, $description, $price, $stock, $low_stock_threshold, $category_id, $is_featured, $id]);
                 
                 $_SESSION['success'] = 'Product updated successfully!';
                 redirect('index.php');
@@ -100,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Product | <?php echo SITE_NAME; ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="../assets/css/styles.css" rel="stylesheet">
+    <link href="../../assets/css/styles.css" rel="stylesheet">
 </head>
 <body>
     <?php include '../includes/admin-header.php'; ?>
@@ -139,6 +173,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             </div>
                             
                             <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="category_id" class="form-label">Category</label>
+                                        <select class="form-select" id="category_id" name="category_id" required>
+                                            <option value="">Select Category</option>
+                                            <?php foreach ($categories as $category): ?>
+                                                <option value="<?php echo $category['id']; ?>" 
+                                                        <?php echo $product['category_id'] == $category['id'] ? 'selected' : ''; ?>>
+                                                    <?php echo htmlspecialchars($category['name']); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="is_featured" class="form-label">Featured Product</label>
+                                        <select class="form-select" id="is_featured" name="is_featured">
+                                            <option value="0" <?php echo !$product['is_featured'] ? 'selected' : ''; ?>>No</option>
+                                            <option value="1" <?php echo $product['is_featured'] ? 'selected' : ''; ?>>Yes</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
                                 <div class="col-md-4">
                                     <div class="mb-3">
                                         <label for="price" class="form-label">Price (₹)</label>
@@ -165,14 +225,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         
                         <div class="col-md-4">
                             <div class="mb-3">
-                                <label class="form-label">Current Image</label>
-                                <div class="mb-2">
-                                    <img src="../uploads/products/<?php echo $product['image']; ?>" 
-                                         alt="Current product image" class="img-fluid" style="max-height: 200px;">
+                                <label class="form-label">Current Images</label>
+                                <div class="mb-2" style="max-height: 300px; overflow-y: auto;">
+                                    <?php if (!empty($productImages)): ?>
+                                        <?php foreach ($productImages as $image): ?>
+                                            <div class="mb-2">
+                                                <img src="../../uploads/products/<?php echo $image['image_path']; ?>" 
+                                                     alt="Product image" class="img-fluid" style="max-height: 100px;">
+                                                <?php if ($image['is_primary']): ?>
+                                                    <small class="text-primary d-block">Primary Image</small>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <img src="../../uploads/products/<?php echo $product['image']; ?>" 
+                                             alt="Current product image" class="img-fluid" style="max-height: 200px;">
+                                    <?php endif; ?>
                                 </div>
-                                <label for="image" class="form-label">New Image (optional)</label>
-                                <input type="file" class="form-control" id="image" name="image">
-                                <div class="form-text">Leave empty to keep current image. Max 5MB.</div>
+                                <label for="images" class="form-label">New Images (optional)</label>
+                                <input type="file" class="form-control" id="images" name="images[]" multiple>
+                                <div class="form-text">Leave empty to keep current images. Uploading new images will replace all existing images. Max 5MB each.</div>
                             </div>
                         </div>
                     </div>
