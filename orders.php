@@ -7,15 +7,17 @@ requireLogin();
 
 // Get user's orders
 $stmt = $pdo->prepare("
-    SELECT o.*, 
-           oi.custom_stl, oi.custom_notes, oi.infill_percentage, oi.layer_height, 
+    SELECT o.*,
+           oi.product_id, oi.custom_stl, oi.custom_notes, oi.infill_percentage, oi.layer_height,
            oi.support_needed, oi.quantity,
            c.name as color_name, c.hex_code,
-           m.name as material_name
+           m.name as material_name,
+           p.name as product_name
     FROM orders o
     LEFT JOIN order_items oi ON o.id = oi.order_id
     LEFT JOIN colors c ON oi.color_id = c.id
     LEFT JOIN materials m ON oi.material_id = m.id
+    LEFT JOIN products p ON oi.product_id = p.id
     WHERE o.user_id = ?
     ORDER BY o.created_at DESC
 ");
@@ -98,7 +100,6 @@ if (isset($_SESSION['flash_message'])) {
             </div>
         <?php endif; ?>
 
-        <!-- Address Section -->
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Delivery Address</h5>
@@ -152,38 +153,24 @@ if (isset($_SESSION['flash_message'])) {
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <div class="col-md-6">
-                                <p><strong>Order Date:</strong> <?php echo date('M j, Y g:i A', strtotime($order['created_at'])); ?></p>
-                                <p><strong>Quantity:</strong> <?php echo $order['quantity']; ?></p>
-                                <?php if ($order['material_name']): ?>
+                            <div class="col-md-8">
+                                <?php if ($order['product_id']): ?>
+                                    <p><strong>Product:</strong> <?php echo htmlspecialchars($order['product_name']); ?></p>
+                                <?php else: ?>
                                     <p><strong>Material:</strong> <?php echo htmlspecialchars($order['material_name']); ?></p>
-                                <?php endif; ?>
-                                <?php if ($order['color_name']): ?>
-                                    <p><strong>Color:</strong> 
-                                        <span class="color-preview" style="background-color: <?php echo $order['hex_code']; ?>"></span>
-                                        <?php echo htmlspecialchars($order['color_name']); ?>
-                                    </p>
-                                <?php endif; ?>
-                            </div>
-                            <div class="col-md-6">
-                                <?php if ($order['infill_percentage']): ?>
+                                    <p><strong>Color:</strong> <span class="color-preview" style="background-color:<?php echo $order['hex_code']; ?>"></span> <?php echo htmlspecialchars($order['color_name']); ?></p>
                                     <p><strong>Infill:</strong> <?php echo $order['infill_percentage']; ?>%</p>
-                                <?php endif; ?>
-                                <?php if ($order['layer_height']): ?>
                                     <p><strong>Layer Height:</strong> <?php echo $order['layer_height']; ?>mm</p>
+                                    <p><strong>Supports:</strong> <?php echo $order['support_needed'] ? 'Yes' : 'No'; ?></p>
                                 <?php endif; ?>
-                                <p><strong>Support:</strong> <?php echo $order['support_needed'] ? 'Yes' : 'No'; ?></p>
-                                <p><strong>Total:</strong> 
-                                    <?php if ($order['status'] == 'pending' && $order['final_total'] == 0): ?>
-                                        <span class="text-muted">Pending admin review</span>
-                                    <?php elseif ($order['discount_amount'] > 0): ?>
-                                        <span class="text-decoration-line-through"><?php echo formatCurrency($order['total']); ?></span>
-                                        <span class="text-success"><?php echo formatCurrency($order['final_total']); ?></span>
-                                        <small class="text-muted">(<?php echo formatCurrency($order['discount_amount']); ?> discount)</small>
-                                    <?php else: ?>
-                                        <?php echo formatCurrency($order['final_total']); ?>
-                                    <?php endif; ?>
-                                </p>
+                                <p><strong>Quantity:</strong> <?php echo $order['quantity']; ?></p>
+                            </div>
+                            <div class="col-md-4 text-md-end">
+                                <p><strong>Total:</strong> <?php echo formatCurrency($order['final_total']); ?></p>
+                                <?php if (!empty($order['delivery_partner']) && !empty($order['tracking_id'])): ?>
+                                    <p><strong>Delivery Partner:</strong> <?php echo htmlspecialchars($order['delivery_partner']); ?></p>
+                                    <p><strong>Tracking ID:</strong> <?php echo htmlspecialchars($order['tracking_id']); ?></p>
+                                <?php endif; ?>
                             </div>
                         </div>
                         
@@ -210,7 +197,7 @@ if (isset($_SESSION['flash_message'])) {
                                 <a href="payment.php?order_id=<?php echo $order['id']; ?>" class="btn btn-success">
                                     <i class="fas fa-credit-card"></i> Pay Now
                                 </a>
-                            <?php elseif ($order['status'] == 'pending' && ($order['final_total'] == 0 || $order['admin_price'] === null)): ?>
+                            <?php elseif ($order['status'] == 'pending' && ($order['final_total'] == 0 || !isset($order['admin_price']))): ?>
                                 <span class="badge bg-info">Waiting for review</span>
                             <?php endif; ?>
                         </div>

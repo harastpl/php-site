@@ -5,12 +5,18 @@ require_once '../../includes/auth.php';
 
 requireAdmin();
 
-// Handle status update
+// Handle status and delivery update
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
     $order_id = (int)$_POST['order_id'];
     $status = $_POST['status'];
     $admin_price = isset($_POST['admin_price']) ? (float)$_POST['admin_price'] : 0;
+    $delivery_partner = trim($_POST['delivery_partner']);
+    $tracking_id = trim($_POST['tracking_id']);
     
+    // Update delivery details
+    $stmt_delivery = $pdo->prepare("UPDATE orders SET delivery_partner = ?, tracking_id = ? WHERE id = ?");
+    $stmt_delivery->execute([$delivery_partner, $tracking_id, $order_id]);
+
     // Only update price for custom orders when status is 'processing'
     $stmt_check_custom = $pdo->prepare("SELECT custom_stl FROM order_items WHERE order_id = ?");
     $stmt_check_custom->execute([$order_id]);
@@ -35,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
         $stmt->execute([$status, $order_id]);
     }
     
-    $_SESSION['success'] = 'Order status updated successfully!';
+    $_SESSION['success'] = 'Order updated successfully!';
     redirect('index.php');
 }
 
@@ -180,6 +186,12 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                             <input type="number" step="0.01" name="admin_price" class="form-control form-control-sm mb-2" 
                                                    placeholder="Enter final price" value="<?php echo $order['admin_price'] ?? ''; ?>">
                                             <small class="text-muted">This will be the base price before any bulk discounts</small>
+                                        </div>
+                                        <div class="mb-2">
+                                            <input type="text" name="delivery_partner" class="form-control form-control-sm" placeholder="Delivery Partner" value="<?php echo htmlspecialchars($order['delivery_partner'] ?? ''); ?>">
+                                        </div>
+                                        <div class="mb-2">
+                                            <input type="text" name="tracking_id" class="form-control form-control-sm" placeholder="Tracking ID" value="<?php echo htmlspecialchars($order['tracking_id'] ?? ''); ?>">
                                         </div>
                                         <button type="submit" name="update_status" class="btn btn-sm btn-primary">Update</button>
                                     </form>
