@@ -18,16 +18,16 @@ define('ORDER_ATTACHMENT_DIR', __DIR__ . '/../uploads/order_attachments/'); // N
 
 // 1. CHOOSE THE CORRECT URL FOR YOUR ENVIRONMENT
 // For Sandbox/Testing:
-define('PHONEPE_BASE_URL', 'https://api-preprod.phonepe.com/apis/pg-sandbox');
+// define('PHONEPE_BASE_URL', 'https://api-preprod.phonepe.com/apis/pg-sandbox');
 // For Production/Live, comment the line above and uncomment the line below:
-// define('PHONEPE_BASE_URL', 'https://api.phonepe.com/apis/identity-manager');
+define('PHONEPE_BASE_URL', 'https://api.phonepe.com/apis/identity-manager');
 
 
 
 
 // 2. PASTE THE MATCHING CREDENTIALS FROM THE CORRECT DASHBOARD
-define('PHONEPE_CLIENT_ID', 'TEST-M23LLUW7GSPOL_25071');      // Paste the Client ID that matches the URL above
-define('PHONEPE_CLIENT_SECRET', 'YzA0MjAyM2EtNTQ1Yi00MWRiLThmYWEtNzM0MjIyMGUwMThm'); // Paste the Client Secret that matches the URL above
+define('PHONEPE_CLIENT_ID', '');      // Paste the Client ID that matches the URL above
+define('PHONEPE_CLIENT_SECRET', ''); // Paste the Client Secret that matches the URL above
 
 // =================================================================
 

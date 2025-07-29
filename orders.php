@@ -166,10 +166,18 @@ if (isset($_SESSION['flash_message'])) {
                                 <p><strong>Quantity:</strong> <?php echo $order['quantity']; ?></p>
                             </div>
                             <div class="col-md-4 text-md-end">
-                                <p><strong>Total:</strong> <?php echo formatCurrency($order['final_total']); ?></p>
+                                <p class="mb-1"><strong>Total:</strong>
+                                    <span>
+                                        <?php if ($order['final_total'] > 0): ?>
+                                            <?php echo formatCurrency($order['final_total']); ?>
+                                        <?php else: ?>
+                                            <em class="text-muted">To be updated soon</em>
+                                        <?php endif; ?>
+                                    </span>
+                                </p>
                                 <?php if (!empty($order['delivery_partner']) && !empty($order['tracking_id'])): ?>
-                                    <p><strong>Delivery Partner:</strong> <?php echo htmlspecialchars($order['delivery_partner']); ?></p>
-                                    <p><strong>Tracking ID:</strong> <?php echo htmlspecialchars($order['tracking_id']); ?></p>
+                                    <p class="mb-1"><strong>Delivery Partner:</strong> <?php echo htmlspecialchars($order['delivery_partner']); ?></p>
+                                    <p class="mb-0"><strong>Tracking ID:</strong> <?php echo htmlspecialchars($order['tracking_id']); ?></p>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -193,11 +201,11 @@ if (isset($_SESSION['flash_message'])) {
                         <?php endif; ?>
                         
                         <div class="mt-3 text-end">
-                            <?php if (strtolower($order['payment_status']) == 'pending' && $order['status'] == 'processing' && $order['final_total'] > 0): ?>
+                            <?php if (strtolower($order['payment_status']) == 'pending' && $order['final_total'] > 0): ?>
                                 <a href="payment.php?order_id=<?php echo $order['id']; ?>" class="btn btn-success">
                                     <i class="fas fa-credit-card"></i> Pay Now
                                 </a>
-                            <?php elseif ($order['status'] == 'pending' && ($order['final_total'] == 0 || !isset($order['admin_price']))): ?>
+                            <?php elseif ($order['final_total'] == 0): ?>
                                 <span class="badge bg-info">Waiting for review</span>
                             <?php endif; ?>
                         </div>

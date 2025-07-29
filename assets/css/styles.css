@@ -3,9 +3,9 @@
 
 /* Light Theme with Blue Shades */
 :root {
-    --primary-blue: #3d1EFF;
+    --primary-blue: #008BFF;
     --secondary-blue: #1E96FF;
-    --tertiary-blue: #1E40FF;
+    --tertiary-blue: #003AFF;
     --accent-blue: #1EC9FF;
     --white: #FFFFFF;
     --light-gray: #E9ECEF;
@@ -14,6 +14,7 @@
     --red-magenta: #E91E63;
     --text-dark: #212529;
     --text-muted: #6C757D;
+    --price: #0055FF;
 }
 
 /* Base Styles */
@@ -99,7 +100,7 @@ a:hover {
 .navbar-brand {
     color: var(--white) !important;
     font-weight: 700;
-    font-size: 1.5rem;
+    font-size: 1.1rem;
 }
 
 .navbar-brand img {
@@ -262,7 +263,7 @@ a:hover {
     border: 2px solid var(--medium-gray);
     border-radius: 8px;
     color: var(--text-dark);
-    padding: 0.75rem;
+    padding: 0.5rem;
     transition: all 0.3s ease;
 }
 
@@ -436,7 +437,7 @@ a:hover {
 }
 
 .featured-products .card-img-top {
-    height: 250px;
+    height: 300px;
     object-fit: cover;
     transition: transform 0.3s ease;
 }
@@ -448,7 +449,7 @@ a:hover {
 .price {
     font-size: 1.5rem;
     font-weight: 700;
-    color: var(--primary-blue);
+    color: var(--price);
 }
 
 /* Color Selection */
@@ -655,10 +656,11 @@ a:hover {
         margin-bottom: 1rem;
     }
 
-    .product-grid {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-    }
+   .product-grid {
+       grid-template-columns: repeat(2, 1fr);
+       /* Changed from 1fr */
+       gap: 1rem;
+   }
 
     .specification-card {
         padding: 1rem;
@@ -686,9 +688,17 @@ a:hover {
 }
 
 @media (max-width: 576px) {
+    .product-grid .card-text {
+            display: none;
+            /* Add this line to hide the description on mobile */
+        }
     .container {
-        padding-left: 5px;
-        padding-right: 5px;
+        padding-left: 0px;
+        padding-right: 0px;
+    }
+
+    .navbar {
+        padding: 0.5rem 0;
     }
 
     .navbar .container {
@@ -705,7 +715,7 @@ a:hover {
     }
 
     .specification-card {
-        padding: 0.75rem;
+        padding: 0rem;
     }
 
     .btn {
@@ -718,7 +728,11 @@ a:hover {
     }
 
     .navbar-brand {
-        font-size: 1.2rem;
+        font-size: 1.0rem;
+    }
+
+    .nav-link {
+        font-size: 0.9rem;
     }
 
     .navbar-brand img {
@@ -727,7 +741,7 @@ a:hover {
 
     .form-control,
     .form-select {
-        font-size: 16px;
+        font-size: 12px;
         /* Prevents zoom on iOS */
     }
 
@@ -796,11 +810,12 @@ a:hover {
 }
 
 .product-image-main {
-  width: 100%;
-  height: 400px;
-  object-fit: cover;
-  border-radius: 8px;
-  transition: opacity 0.1s ease-in-out; /* Added for fade effect */
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+    transition: opacity 0.1s ease-in-out;
+    /* Added for fade effect */
 }
 
 .product-image-thumbnails {
@@ -812,8 +827,8 @@ a:hover {
 
 .product-image-thumb {
     width: 80px;
-    height: 80px;
-    object-fit: cover;
+    height: 8-px;
+    object-fit: contain;
     border-radius: 4px;
     cursor: pointer;
     border: 2px solid transparent;
@@ -879,16 +894,15 @@ a:hover {
 
 /* Product Grid */
 .product-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 2rem;
-  padding: 2rem 0;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
 }
 
 .product-grid .card-img-top {
-  height: 250px;
-  object-fit: cover;
-  transition: opacity 0.1s ease-in-out; /* Added for fade effect */
+    height: 300px;
+    object-fit: cover;
+    transition: opacity 0.1s ease-in-out;
+    /* Added for fade effect */
 }
 
 /* Address Section */

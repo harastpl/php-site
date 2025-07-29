@@ -2,28 +2,77 @@
 require_once 'includes/config.php';
 require_once 'includes/functions.php';
 require_once 'includes/auth.php';
+require_once 'includes/email_functions.php';
 
 $error = '';
 $success = '';
+$step = 1;
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $email = trim($_POST['email']);
-    
-    if (empty($email)) {
-        $error = 'Please enter your email address';
-    } else {
-        $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
-        $stmt->execute([$email]);
-        $user = $stmt->fetch();
+    if (isset($_POST['send_otp'])) {
+        $email = trim($_POST['email']);
         
-        if ($user) {
-            // In a real application, you would generate a unique token,
-            // store it in the database with an expiration date,
-            // and email a password reset link to the user.
-            // For this example, we'll just show a success message.
-            $success = 'A password reset link has been sent to your email address.';
+        if (empty($email)) {
+            $error = 'Please enter your email address';
         } else {
-            $error = 'No user found with that email address';
+            $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+            $stmt->execute([$email]);
+            $user = $stmt->fetch();
+            
+            if ($user) {
+                $_SESSION['reset_email'] = $email;
+                $otp = generateOTP();
+                
+                if (storeOTP($email, $otp, 'password_reset')) {
+                    if (sendOTPEmail($email, $otp, 'password_reset')) {
+                        $success = 'OTP has been sent to your email address.';
+                    } else {
+                        $success = "OTP generated but email failed to send. Your OTP is: $otp";
+                    }
+                } else {
+                    $error = 'Failed to generate OTP. Please try again.';
+                }
+                
+                $step = 2;
+            } else {
+                $error = 'No user found with that email address';
+            }
+        }
+    } elseif (isset($_POST['verify_otp'])) {
+        $otp_entered = trim($_POST['otp']);
+        $email = $_SESSION['reset_email'];
+        
+        if (verifyOTP($email, $otp_entered, 'password_reset')) {
+            $step = 3;
+        } else {
+            $error = 'Invalid or expired OTP';
+            $step = 2;
+        }
+    } elseif (isset($_POST['reset_password'])) {
+        $password = trim($_POST['password']);
+        $confirm_password = trim($_POST['confirm_password']);
+        $email = $_SESSION['reset_email'];
+        
+        if (empty($password) || empty($confirm_password)) {
+            $error = 'Please enter and confirm your new password';
+            $step = 3;
+        } elseif ($password !== $confirm_password) {
+            $error = 'Passwords do not match';
+            $step = 3;
+        } elseif (strlen($password) < 6) {
+            $error = 'Password must be at least 6 characters long';
+            $step = 3;
+        } else {
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE email = ?");
+            if ($stmt->execute([$hashedPassword, $email])) {
+                $success = 'Your password has been reset successfully. You can now login.';
+                unset($_SESSION['reset_email']);
+                $step = 4;
+            } else {
+                $error = 'Failed to reset password. Please try again.';
+                $step = 3;
+            }
         }
     }
 }
@@ -50,13 +99,44 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <?php if ($success): ?>
                             <div class="alert alert-success"><?php echo $success; ?></div>
                         <?php endif; ?>
-                        <form method="post">
-                            <div class="mb-3">
-                                <label for="email" class="form-label">Email address</label>
-                                <input type="email" class="form-control" id="email" name="email" required>
+                        
+                        <?php if ($step == 1): ?>
+                            <form method="post">
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email address</label>
+                                    <input type="email" class="form-control" id="email" name="email" required>
+                                </div>
+                                <button type="submit" name="send_otp" class="btn btn-primary">Send OTP</button>
+                            </form>
+                        <?php elseif ($step == 2): ?>
+                            <form method="post">
+                                <div class="mb-3">
+                                    <label for="otp" class="form-label">Enter OTP</label>
+                                    <input type="text" class="form-control" id="otp" name="otp" maxlength="6" required>
+                                    <div class="form-text">Check your email for the 6-digit OTP</div>
+                                </div>
+                                <button type="submit" name="verify_otp" class="btn btn-primary">Verify OTP</button>
+                                <div class="text-center mt-3">
+                                    <a href="forgot_password.php">Resend OTP</a>
+                                </div>
+                            </form>
+                        <?php elseif ($step == 3): ?>
+                            <form method="post">
+                                <div class="mb-3">
+                                    <label for="password" class="form-label">New Password</label>
+                                    <input type="password" class="form-control" id="password" name="password" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="confirm_password" class="form-label">Confirm New Password</label>
+                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                                </div>
+                                <button type="submit" name="reset_password" class="btn btn-primary">Reset Password</button>
+                            </form>
+                        <?php elseif ($step == 4): ?>
+                            <div class="alert alert-success">
+                                Password reset successful! <a href="login.php">Login here</a>
                             </div>
-                            <button type="submit" class="btn btn-primary">Send Password Reset Link</button>
-                        </form>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

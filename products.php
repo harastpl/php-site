@@ -51,15 +51,15 @@ $categories = getCategories();
                 </div>
                 <div class="col-md-2">
                     <select class="form-select filter-select" name="sort">
-                        <option value="created_at" <?php echo $sortBy == 'created_at' ? 'selected' : ''; ?>>Date Added</option>
-                        <option value="name" <?php echo $sortBy == 'name' ? 'selected' : ''; ?>>Name</option>
-                        <option value="price" <?php echo $sortBy == 'price' ? 'selected' : ''; ?>>Price</option>
+                        <option value="created_at" <?php echo $sortBy == 'created_at' ? 'selected' : ''; ?>>Sort by: Date Added</option>
+                        <option value="name" <?php echo $sortBy == 'name' ? 'selected' : ''; ?>>Sort by: Name</option>
+                        <option value="price" <?php echo $sortBy == 'price' ? 'selected' : ''; ?>>Sort by: Price</option>
                     </select>
                 </div>
                 <div class="col-md-2">
                     <select class="form-select filter-select" name="order">
-                        <option value="ASC" <?php echo $sortOrder == 'ASC' ? 'selected' : ''; ?>>Ascending</option>
-                        <option value="DESC" <?php echo $sortOrder == 'DESC' ? 'selected' : ''; ?>>Descending</option>
+                        <option value="ASC" <?php echo $sortOrder == 'ASC' ? 'selected' : ''; ?>>Order by: Ascending</option>
+                        <option value="DESC" <?php echo $sortOrder == 'DESC' ? 'selected' : ''; ?>>Order by: Descending</option>
                     </select>
                 </div>
                 <div class="col-md-2">

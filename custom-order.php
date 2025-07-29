@@ -2,6 +2,7 @@
 require_once 'includes/config.php';
 require_once 'includes/functions.php';
 require_once 'includes/auth.php';
+require_once 'includes/email_functions.php';
 
 // Require login for custom orders
 requireLogin();
@@ -78,21 +79,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $materialResult = $stmt->fetch();
                 if ($materialResult) $materialName = $materialResult['name'];
                 
-                $subject = 'New Custom 3D Print Order - #' . $orderId;
-                $message = "New custom order received:\n\n";
-                $message .= "Order ID: #$orderId\n";
-                $message .= "Customer: " . $_SESSION['username'] . " (" . $_SESSION['email'] . ")\n";
-                $message .= "Quantity: $quantity\n";
-                $message .= "Material: $materialName\n";
-                $message .= "Color: $colorName\n";
-                $message .= "Infill: {$infill}%\n";
-                $message .= "Layer Height: {$layer_height}mm\n";
-                $message .= "Support Needed: " . ($support_needed ? 'Yes' : 'No') . "\n";
-                $message .= "Price: Pending admin review\n";
-                $message .= "Notes: $notes\n";
-                $message .= "File: " . SITE_URL . "/uploads/stl_files/" . $uploadResult['file_name'] . "\n";
-                
-                sendEmailNotification(ADMIN_EMAIL, $subject, $message);
+                // Send order confirmation email to customer and admin
+                $orderDetails = [
+                    'status' => 'pending',
+                    'final_total' => 0
+                ];
+                sendOrderConfirmationEmail($_SESSION['email'], $orderId, $orderDetails);
                 
                 $_SESSION['success'] = 'Your custom order has been submitted successfully! Order ID: #' . $orderId . '. We will review your order and contact you with pricing details.';
                 redirect('orders.php');

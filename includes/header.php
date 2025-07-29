@@ -31,7 +31,7 @@
                         <?php if (function_exists('isAdmin') && isAdmin()): ?>
                             <li class="nav-item"><a class="nav-link" href="admin/">Admin Panel</a></li>
                         <?php endif; ?>
-                        <li class="nav-item"><a class="nav-link" href="logout.php">Logout (<?php echo $_SESSION['username']; ?>)</a></li>
+                        <li class="nav-item"><a class="nav-link" href="logout.php">Logout </a></li>
                     <?php else: ?>
                         <li class="nav-item"><a class="nav-link" href="login.php">Login</a></li>
                         <li class="nav-item"><a class="nav-link" href="register.php">Register</a></li>

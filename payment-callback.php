@@ -3,6 +3,7 @@ session_start();
 require 'includes/config.php';
 require 'includes/db.php';
 require 'includes/functions.php';
+require 'includes/email_functions.php';
 
 // Check if the merchant order ID ('moid') is present in the URL
 if (!isset($_GET['moid'])) {
@@ -35,7 +36,7 @@ try {
 }
 
 // The API endpoint from the documentation
-$statusUrl = PHONEPE_BASE_URL . '/checkout/v2/order/' . $merchantOrderId . '/status';
+$statusUrl = 'https://api.phonepe.com/apis/pg' . '/checkout/v2/order/' . $merchantOrderId . '/status';
 
 $curl = curl_init();
 
@@ -86,6 +87,15 @@ if (isset($responseData['state'])) {
                 "UPDATE orders SET payment_status = 'Paid', transaction_id = ? WHERE payment_id = ?"
             );
             $stmt->execute([$transactionId, $merchantOrderId]);
+
+            // Get order details for email
+            $stmt = $pdo->prepare("SELECT o.*, u.email FROM orders o LEFT JOIN users u ON o.user_id = u.id WHERE o.payment_id = ?");
+            $stmt->execute([$merchantOrderId]);
+            $order = $stmt->fetch();
+            
+            if ($order && $order['email']) {
+                sendPaymentConfirmationEmail($order['email'], $order['id'], $order['final_total']);
+            }
 
             $_SESSION['flash_message'] = [
                 'type' => 'success',

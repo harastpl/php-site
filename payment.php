@@ -19,8 +19,11 @@ if ($order_id) {
     $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ? AND user_id = ?");
     $stmt->execute([$order_id, $_SESSION['user_id']]);
     $order = $stmt->fetch();
-    if ($order) {
+    if ($order && $order['final_total'] > 0) {
         $total_amount = $order['final_total'];
+    } elseif ($order && $order['final_total'] == 0) {
+        $_SESSION['error'] = 'Order price is not yet updated by admin.';
+        redirect('orders.php');
     }
 } elseif ($product_id) {
     $stmt = $pdo->prepare("SELECT price FROM products WHERE id = ?");
@@ -85,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     $curl = curl_init();
     curl_setopt_array($curl, array(
-      CURLOPT_URL => PHONEPE_BASE_URL . '/checkout/v2/pay',
+      CURLOPT_URL => 'https://api.phonepe.com/apis/pg' . '/checkout/v2/pay',
       CURLOPT_RETURNTRANSFER => true,
       CURLOPT_CUSTOMREQUEST => 'POST',
       CURLOPT_POSTFIELDS => json_encode($payload),

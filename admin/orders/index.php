@@ -2,6 +2,7 @@
 require_once '../../includes/config.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/auth.php';
+require_once '../../includes/email_functions.php';
 
 requireAdmin();
 
@@ -13,6 +14,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
     $delivery_partner = trim($_POST['delivery_partner']);
     $tracking_id = trim($_POST['tracking_id']);
     
+    // Get order and user details for email notifications
+    $stmt_order_details = $pdo->prepare("SELECT o.*, u.email FROM orders o LEFT JOIN users u ON o.user_id = u.id WHERE o.id = ?");
+    $stmt_order_details->execute([$order_id]);
+    $order_details = $stmt_order_details->fetch();
+    
+    $send_delivery_email = false;
+    $send_price_email = false;
+    
+    // Check if delivery info is being updated
+    if (!empty($delivery_partner) && !empty($tracking_id)) {
+        $stmt_check_delivery = $pdo->prepare("SELECT delivery_partner, tracking_id FROM orders WHERE id = ?");
+        $stmt_check_delivery->execute([$order_id]);
+        $current_delivery = $stmt_check_delivery->fetch();
+        
+        if ($current_delivery['delivery_partner'] != $delivery_partner || $current_delivery['tracking_id'] != $tracking_id) {
+            $send_delivery_email = true;
+        }
+    }
+    
     // Update delivery details
     $stmt_delivery = $pdo->prepare("UPDATE orders SET delivery_partner = ?, tracking_id = ? WHERE id = ?");
     $stmt_delivery->execute([$delivery_partner, $tracking_id, $order_id]);
@@ -23,6 +43,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
     $is_custom_order = $stmt_check_custom->fetchColumn();
 
     if ($is_custom_order && $status == 'processing' && $admin_price > 0) {
+        // Check if price is being updated
+        if ($order_details['admin_price'] != $admin_price) {
+            $send_price_email = true;
+        }
+        
         // Calculate discount if applicable
         $stmt_order = $pdo->prepare("SELECT oi.quantity FROM order_items oi WHERE oi.order_id = ?");
         $stmt_order->execute([$order_id]);
@@ -39,6 +64,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
     } else {
         $stmt = $pdo->prepare("UPDATE orders SET status = ? WHERE id = ?");
         $stmt->execute([$status, $order_id]);
+    }
+    
+    // Send email notifications
+    if ($order_details && $order_details['email']) {
+        if ($send_price_email && $admin_price > 0) {
+            sendPriceUpdateEmail($order_details['email'], $order_id, $admin_price);
+        }
+        
+        if ($send_delivery_email) {
+            sendDeliveryUpdateEmail($order_details['email'], $order_id, $delivery_partner, $tracking_id);
+        }
     }
     
     $_SESSION['success'] = 'Order updated successfully!';

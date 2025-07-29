@@ -2,6 +2,7 @@
 require_once 'includes/config.php';
 require_once 'includes/functions.php';
 require_once 'includes/auth.php';
+require_once 'includes/email_functions.php';
 
 if (isLoggedIn()) {
     redirect('index.php');
@@ -38,25 +39,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 ];
                 
                 // Send OTP
-                $otp = rand(100000, 999999);
-                $_SESSION['otp'] = $otp;
+                $otp = generateOTP();
                 
-                // In a real application, you would send the OTP via email or SMS
-                // For now, we'll just display it for testing purposes
-                $success = "Your OTP is: $otp";
+                // Store OTP in database and send email
+                if (storeOTP($email, $otp, 'registration')) {
+                    if (sendOTPEmail($email, $otp, 'registration')) {
+                        $success = "OTP has been sent to your email address. Please check your inbox.";
+                    } else {
+                        $success = "OTP generated but email failed to send. Your OTP is: $otp";
+                    }
+                } else {
+                    $error = 'Failed to generate OTP. Please try again.';
+                }
                 
                 $step = 2;
             }
         }
     } elseif (isset($_POST['verify_otp'])) {
         $otp_entered = trim($_POST['otp']);
+        $registration_data = $_SESSION['registration_data'];
         
-        if ($otp_entered == $_SESSION['otp']) {
-            $registration_data = $_SESSION['registration_data'];
+        if (verifyOTP($registration_data['email'], $otp_entered, 'registration')) {
             if (register($registration_data['username'], $registration_data['email'], $registration_data['password'])) {
                 $success = 'Registration successful! You can now login.';
                 unset($_SESSION['registration_data']);
-                unset($_SESSION['otp']);
                 $step = 3;
             } else {
                 $error = 'Registration failed';

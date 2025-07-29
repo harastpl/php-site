@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $errors[] = 'Invalid pincode. Please enter a 6-digit pincode';
     }
     
-    if (empty($phone) || !preg_match('/^\+\d{1,3}\d{10}$/', $phone)) {
+    if (empty($phone) || !preg_match('/^\+\d{12}$/', $phone)) {
         $errors[] = 'Invalid phone number. Please enter a valid phone number with country code (+91 followed by 10 digits)';
     }
     
@@ -50,10 +50,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             'phone' => $phone
         ]);
         
-        $stmt = $pdo->prepare("UPDATE users SET address = ? WHERE id = ?");
-        $stmt->execute([$full_address, $_SESSION['user_id']]);
+        // **CORRECTED SQL QUERY AND EXECUTION**
+        $stmt = $pdo->prepare("UPDATE users SET address = ?, phone = ? WHERE id = ?");
+        $stmt->execute([$full_address, $phone, $_SESSION['user_id']]);
         
-        $_SESSION['success'] = 'Address updated successfully!';
+        $_SESSION['success'] = 'Address and phone number updated successfully!';
     } else {
         $_SESSION['error'] = implode('<br>', $errors);
     }

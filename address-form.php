@@ -6,7 +6,7 @@ require_once 'includes/auth.php';
 requireLogin();
 
 // Get current address
-$stmt = $pdo->prepare("SELECT address FROM users WHERE id = ?");
+$stmt = $pdo->prepare("SELECT address, phone FROM users WHERE id = ?");
 $stmt->execute([$_SESSION['user_id']]);
 $user = $stmt->fetch();
 
@@ -15,7 +15,15 @@ if (!empty($user['address'])) {
     $current_address = json_decode($user['address'], true);
 }
 
+$current_phone = $user['phone'] ?? '+91';
+
+
 $redirect = $_GET['redirect'] ?? 'orders.php';
+
+$states = [
+    'Andaman and Nicobar Islands', 'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chandigarh', 'Chhattisgarh', 'Dadra and Nagar Haveli and Daman and Diu', 'Delhi', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jammu and Kashmir', 'Jharkhand', 'Karnataka', 'Kerala', 'Ladakh', 'Lakshadweep', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Puducherry', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal'
+];
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -71,8 +79,14 @@ $redirect = $_GET['redirect'] ?? 'orders.php';
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="state" class="form-label">State *</label>
-                                        <input type="text" class="form-control" id="state" name="state" 
-                                               value="<?php echo htmlspecialchars($current_address['state'] ?? ''); ?>" required>
+                                        <select class="form-select" id="state" name="state" required>
+                                            <option value="">Select State</option>
+                                            <?php foreach ($states as $state): ?>
+                                                <option value="<?php echo $state; ?>" <?php echo (isset($current_address['state']) && $current_address['state'] == $state) ? 'selected' : ''; ?>>
+                                                    <?php echo $state; ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -91,8 +105,8 @@ $redirect = $_GET['redirect'] ?? 'orders.php';
                                     <div class="mb-3">
                                         <label for="phone" class="form-label">Phone Number *</label>
                                         <input type="tel" class="form-control" id="phone" name="phone" 
-                                               value="<?php echo htmlspecialchars($current_address['phone'] ?? '+91'); ?>" 
-                                               pattern="\+\d{1,3}\d{10,12}" required>
+                                               value="<?php echo htmlspecialchars($current_phone); ?>" 
+                                               pattern="\+\d{12}" required>
                                         <div class="form-text">Include country code (e.g., +91 followed by 10 digits)</div>
                                     </div>
                                 </div>
@@ -114,16 +128,24 @@ $redirect = $_GET['redirect'] ?? 'orders.php';
     <script>
         // Auto-format phone number
         document.getElementById('phone').addEventListener('input', function(e) {
-            let value = e.target.value;
-            if (!value.startsWith('+')) {
-                e.target.value = '+91' + value.replace(/^\+?91?/, '');
+            let value = e.target.value.replace(/[^\d+]/g, '');
+            if (value.startsWith('+')) {
+                value = '+' + value.substring(1).replace(/[^\d]/g, '');
+            } else {
+                value = '+' + value.replace(/[^\d]/g, '');
             }
+
+            if (value.length > 13) {
+                value = value.substring(0, 13);
+            }
+            
+            e.target.value = value;
         });
         
         // Validate phone number
         document.getElementById('phone').addEventListener('blur', function(e) {
             let value = e.target.value;
-            let phoneRegex = /^\+\d{1,3}\d{10,12}$/;
+            let phoneRegex = /^\+\d{12}$/;
             if (!phoneRegex.test(value)) {
                 e.target.setCustomValidity('Please enter a valid phone number with country code (+91 followed by 10 digits)');
             } else {

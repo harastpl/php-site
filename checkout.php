@@ -2,6 +2,7 @@
 require_once 'includes/config.php';
 require_once 'includes/functions.php';
 require_once 'includes/auth.php';
+require_once 'includes/email_functions.php';
 
 requireLogin();
 
@@ -91,6 +92,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
         
         // Clear cart
         unset($_SESSION['cart']);
+        
+        // Send order confirmation email
+        $orderDetails = [
+            'status' => 'processing',
+            'final_total' => $total
+        ];
+        sendOrderConfirmationEmail($_SESSION['email'], $order_id, $orderDetails);
         
         $_SESSION['success'] = 'Order placed successfully! Order ID: #' . $order_id;
         redirect('payment.php?order_id=' . $order_id);
