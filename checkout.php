@@ -18,7 +18,13 @@ if (!empty($user['address'])) {
 
 // Get cart items
 $cart_items = [];
-$total = 0;
+$subtotal = 0;
+$shipping_total = 0;
+
+// Get delivery charge setting
+$stmt_setting = $pdo->query("SELECT setting_value FROM settings WHERE setting_name = 'delivery_charges_enabled'");
+$delivery_charges_enabled = $stmt_setting->fetchColumn() === '1';
+
 
 if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
     $product_ids = array_unique(array_column($_SESSION['cart'], 'product_id'));
@@ -30,26 +36,49 @@ if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
         $stmt->execute($product_ids);
         $products_db = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Manually create an associative array with product ID as the key
         $products = [];
         foreach($products_db as $p) {
             $products[$p['id']] = $p;
         }
 
+        // Group cart items by product_id to sum quantities
+        $grouped_cart = [];
         foreach ($_SESSION['cart'] as $key => $item) {
             if (isset($products[$item['product_id']])) {
                 $product = $products[$item['product_id']];
-                $subtotal = $product['price'] * $item['quantity'];
-                $total += $subtotal;
+                $item_subtotal = $product['price'] * $item['quantity'];
+                $subtotal += $item_subtotal;
                 
-                $cart_items[] = [
+                 $cart_items[] = [
                     'key' => $key,
                     'product' => $product,
                     'quantity' => $item['quantity'],
-                    'subtotal' => $subtotal,
+                    'subtotal' => $item_subtotal,
                     'custom_text' => $item['custom_text'],
                     'custom_file' => $item['custom_file']
                 ];
+                
+                if (!isset($grouped_cart[$item['product_id']])) {
+                    $grouped_cart[$item['product_id']] = [
+                        'quantity' => 0,
+                        'product' => $product
+                    ];
+                }
+                $grouped_cart[$item['product_id']]['quantity'] += $item['quantity'];
+            }
+        }
+        
+        // Calculate shipping for each unique product
+        if ($delivery_charges_enabled) {
+            foreach($grouped_cart as $product_id => $cart_item) {
+                $product = $cart_item['product'];
+                $quantity = $cart_item['quantity'];
+
+                if ($product['delivery_charge_threshold'] > 0 && $quantity >= $product['delivery_charge_threshold']) {
+                    $shipping_total += $product['delivery_charge_alt'];
+                } else {
+                    $shipping_total += $product['delivery_charge'];
+                }
             }
         }
     }
@@ -60,6 +89,8 @@ if (empty($cart_items)) {
     redirect('cart.php');
 }
 
+$final_total = $subtotal + $shipping_total;
+
 // Handle order placement
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
     if (!$address) {
@@ -69,8 +100,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
     
     try {
         // Create order
-        $stmt = $pdo->prepare("INSERT INTO orders (user_id, total, final_total, status, payment_status) VALUES (?, ?, ?, 'processing', 'pending')");
-        $stmt->execute([$_SESSION['user_id'], $total, $total]);
+        $stmt = $pdo->prepare("INSERT INTO orders (user_id, total, shipping_total, final_total, status, payment_status) VALUES (?, ?, ?, ?, 'processing', 'pending')");
+        $stmt->execute([$_SESSION['user_id'], $subtotal, $shipping_total, $final_total]);
         $order_id = $pdo->lastInsertId();
         
         // Add order items with custom fields
@@ -96,7 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
         // Send order confirmation email
         $orderDetails = [
             'status' => 'processing',
-            'final_total' => $total
+            'final_total' => $final_total
         ];
         sendOrderConfirmationEmail($_SESSION['email'], $order_id, $orderDetails);
         
@@ -186,16 +217,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
                     <div class="card-body">
                         <div class="d-flex justify-content-between mb-3">
                             <span>Subtotal:</span>
-                            <span><?php echo formatCurrency($total); ?></span>
+                            <span><?php echo formatCurrency($subtotal); ?></span>
                         </div>
                         <div class="d-flex justify-content-between mb-3">
                             <span>Shipping:</span>
-                            <span class="text-success">Free</span>
+                             <span><?php echo $shipping_total > 0 ? formatCurrency($shipping_total) : 'Free'; ?></span>
                         </div>
                         <hr>
                         <div class="d-flex justify-content-between mb-4">
                             <strong>Total:</strong>
-                            <strong><?php echo formatCurrency($total); ?></strong>
+                            <strong><?php echo formatCurrency($final_total); ?></strong>
                         </div>
                         
                         <?php if ($address): ?>

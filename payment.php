@@ -10,6 +10,8 @@ $order_id = (int)($_REQUEST['order_id'] ?? 0);
 $product_id = (int)($_REQUEST['product_id'] ?? 0);
 $quantity = (int)($_REQUEST['quantity'] ?? 1);
 $total_amount = 0;
+$shipping_total = 0;
+$subtotal = 0;
 $redirectTokenUrl = '';
 $merchantOrderId = '';
 $order = null;
@@ -21,6 +23,8 @@ if ($order_id) {
     $order = $stmt->fetch();
     if ($order && $order['final_total'] > 0) {
         $total_amount = $order['final_total'];
+        $subtotal = $order['total'];
+        $shipping_total = $order['shipping_total'];
     } elseif ($order && $order['final_total'] == 0) {
         $_SESSION['error'] = 'Order price is not yet updated by admin.';
         redirect('orders.php');
@@ -31,6 +35,7 @@ if ($order_id) {
     $product = $stmt->fetch();
     if ($product) {
         $total_amount = $product['price'] * $quantity;
+        $subtotal = $total_amount;
     }
 }
 
@@ -43,9 +48,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $stmt_product->execute([$product_id]);
             $product = $stmt_product->fetch();
             if ($product) {
-                $total_amount = $product['price'] * $quantity;
-                $stmt_order = $pdo->prepare("INSERT INTO orders (user_id, total, final_total, status, payment_status) VALUES (?, ?, ?, 'pending', 'pending')");
-                $stmt_order->execute([$_SESSION['user_id'], $total_amount, $total_amount]);
+                $subtotal = $product['price'] * $quantity;
+                
+                // Get delivery charge setting
+                $stmt_setting = $pdo->query("SELECT setting_value FROM settings WHERE setting_name = 'delivery_charges_enabled'");
+                $delivery_charges_enabled = $stmt_setting->fetchColumn() === '1';
+                
+                if ($delivery_charges_enabled) {
+                    if ($product['delivery_charge_threshold'] > 0 && $quantity >= $product['delivery_charge_threshold']) {
+                        $shipping_total = $product['delivery_charge_alt'];
+                    } else {
+                        $shipping_total = $product['delivery_charge'];
+                    }
+                }
+
+                $total_amount = $subtotal + $shipping_total;
+
+                $stmt_order = $pdo->prepare("INSERT INTO orders (user_id, total, shipping_total, final_total, status, payment_status) VALUES (?, ?, ?, ?, 'pending', 'pending')");
+                $stmt_order->execute([$_SESSION['user_id'], $subtotal, $shipping_total, $total_amount]);
                 $order_id = $pdo->lastInsertId(); // Get the newly created order ID
 
                 $stmt_item = $pdo->prepare("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)");
@@ -80,7 +100,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         'paymentFlow' => [
             'type' => 'PG_CHECKOUT',
             'merchantUrls' => [
-                // CORRECTED: Pass the merchantOrderId as 'moid' to the callback URL
                 'redirectUrl' => SITE_URL . '/payment-callback.php?moid=' . $merchantOrderId
             ]
         ]
@@ -133,6 +152,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <div class="order-summary mb-4">
                             <h5>Order Summary</h5>
                             <p>Order ID: #<?php echo htmlspecialchars($order_id); ?></p>
+                            <div class="d-flex justify-content-between">
+                                <span>Subtotal:</span>
+                                <span><?php echo formatCurrency($subtotal); ?></span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span>Shipping:</span>
+                                <span><?php echo $shipping_total > 0 ? formatCurrency($shipping_total) : 'Free'; ?></span>
+                            </div>
                             <hr>
                             <div class="d-flex justify-content-between h5">
                                 <span>Total to Pay:</span>
@@ -158,11 +185,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             var tokenUrl = '<?php echo $redirectTokenUrl; ?>';
-            // The callback now uses the merchant order id (moid)
             var moid = '<?php echo $merchantOrderId; ?>';
 
             function paymentCallback(response) {
-                // Redirect to the callback handler with the merchant order id
                 window.location.href = 'payment-callback.php?moid=' + moid;
             }
 

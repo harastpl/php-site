@@ -15,13 +15,16 @@
                 </div>
                 <div class="col-lg-3 col-md-6 mb-4">
                     <h5>Contact Info</h5>
-                    <p><strong>Email:</strong> <a href="mailto:jayant@volt3dge.com">jayant@volt3dge.com</a></p>
+                    <p><strong>Email:</strong> <a href="mailto:team@volt3dge.com">team@volt3dge.com</a></p>
                     <p><strong>Website:</strong> <a href="https://volt3dge.com" target="_blank">www.volt3dge.com</a></p>
+                                        <p><a href ="contact.php">Contact US</a><p>
+
                 </div>
                 <div class="col-lg-3 col-md-6 mb-4">
                     <h5>Socials</h5>
                     <a href="https://www.instagram.com/volt3dge/" target="_blank" class="fs-4 me-3"><i class="fab fa-instagram"></i></a>
                     <a href="https://www.youtube.com/@volt3dge" target="_blank" class="fs-4"><i class="fab fa-youtube"></i></a>
+
                 </div>
             </div>
             <hr style="border-color: #333;">

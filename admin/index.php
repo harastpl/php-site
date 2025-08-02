@@ -5,6 +5,16 @@ require_once 'includes/auth.php';
 
 requireAdmin();
 
+// Handle settings update
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_settings'])) {
+    $delivery_charges_enabled = isset($_POST['delivery_charges_enabled']) ? '1' : '0';
+    $stmt = $pdo->prepare("INSERT INTO settings (setting_name, setting_value) VALUES ('delivery_charges_enabled', ?) ON DUPLICATE KEY UPDATE setting_value = ?");
+    $stmt->execute([$delivery_charges_enabled, $delivery_charges_enabled]);
+    $_SESSION['success'] = 'Settings updated successfully!';
+    redirect('index.php');
+}
+
+
 // Get stats for dashboard
 $stmt = $pdo->query("SELECT COUNT(*) as total_products FROM products");
 $totalProducts = $stmt->fetch()['total_products'];
@@ -14,6 +24,11 @@ $totalOrders = $stmt->fetch()['total_orders'];
 
 $stmt = $pdo->query("SELECT COUNT(*) as pending_orders FROM orders WHERE status = 'pending'");
 $pendingOrders = $stmt->fetch()['pending_orders'];
+
+// Get current settings
+$stmt = $pdo->query("SELECT * FROM settings WHERE setting_name = 'delivery_charges_enabled'");
+$delivery_setting = $stmt->fetch();
+$delivery_charges_enabled = $delivery_setting ? $delivery_setting['setting_value'] : '0';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -35,6 +50,11 @@ $pendingOrders = $stmt->fetch()['pending_orders'];
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2">Dashboard</h1>
                 </div>
+                 <?php if (isset($_SESSION['success'])): ?>
+                    <div class="alert alert-success">
+                        <?php echo $_SESSION['success']; unset($_SESSION['success']); ?>
+                    </div>
+                <?php endif; ?>
 
                 <div class="row">
                     <div class="col-md-4">
@@ -63,6 +83,19 @@ $pendingOrders = $stmt->fetch()['pending_orders'];
                                 <a href="orders/" class="text-white">View Orders</a>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <h2 class="mt-4">Settings</h2>
+                <div class="card">
+                    <div class="card-body">
+                        <form method="POST">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="delivery_charges_enabled" name="delivery_charges_enabled" <?php echo $delivery_charges_enabled === '1' ? 'checked' : ''; ?>>
+                                <label class="form-check-label" for="delivery_charges_enabled">Enable Delivery Charges</label>
+                            </div>
+                            <button type="submit" name="update_settings" class="btn btn-primary mt-3">Save Settings</button>
+                        </form>
                     </div>
                 </div>
 

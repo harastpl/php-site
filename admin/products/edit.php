@@ -19,6 +19,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $name = trim($_POST['name']);
     $description = trim($_POST['description']);
     $price = trim($_POST['price']);
+    $delivery_charge = trim($_POST['delivery_charge']);
+    $delivery_charge_threshold = (int)$_POST['delivery_charge_threshold'];
+    $delivery_charge_alt = trim($_POST['delivery_charge_alt']);
     $stock = (int)$_POST['stock'];
     $low_stock_threshold = (int)$_POST['low_stock_threshold'];
     $category_id = (int)$_POST['category_id'];
@@ -115,8 +118,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
         if (empty($errors)) {
             try {
-                $stmt = $pdo->prepare("UPDATE products SET name = ?, description = ?, price = ?, stock = ?, low_stock_threshold = ?, category_id = ?, is_featured = ? WHERE id = ?");
-                $stmt->execute([$name, $description, $price, $stock, $low_stock_threshold, $category_id, $is_featured, $id]);
+                $stmt = $pdo->prepare("UPDATE products SET name = ?, description = ?, price = ?, delivery_charge = ?, delivery_charge_threshold = ?, delivery_charge_alt = ?, stock = ?, low_stock_threshold = ?, category_id = ?, is_featured = ? WHERE id = ?");
+                $stmt->execute([$name, $description, $price, $delivery_charge, $delivery_charge_threshold, $delivery_charge_alt, $stock, $low_stock_threshold, $category_id, $is_featured, $id]);
                 
                 $_SESSION['success'] = 'Product updated successfully!';
                 redirect('index.php');
@@ -218,6 +221,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         <label for="low_stock_threshold" class="form-label">Low Stock Alert</label>
                                         <input type="number" class="form-control" id="low_stock_threshold" name="low_stock_threshold" 
                                                value="<?php echo $product['low_stock_threshold']; ?>" required>
+                                    </div>
+                                </div>
+                            </div>
+                             <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="delivery_charge" class="form-label">Delivery Charge (₹)</label>
+                                        <input type="number" step="0.01" class="form-control" id="delivery_charge" name="delivery_charge" value="<?php echo htmlspecialchars($product['delivery_charge']); ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="delivery_charge_threshold" class="form-label">Delivery Charge Threshold (Quantity)</label>
+                                        <input type="number" class="form-control" id="delivery_charge_threshold" name="delivery_charge_threshold" value="<?php echo htmlspecialchars($product['delivery_charge_threshold']); ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="delivery_charge_alt" class="form-label">Alternate Delivery Charge (₹)</label>
+                                        <input type="number" step="0.01" class="form-control" id="delivery_charge_alt" name="delivery_charge_alt" value="<?php echo htmlspecialchars($product['delivery_charge_alt']); ?>">
                                     </div>
                                 </div>
                             </div>

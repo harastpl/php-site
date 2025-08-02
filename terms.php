@@ -31,6 +31,7 @@
             margin-left: 270px;
             padding: 20px;
         }
+        
     </style>
 </head>
 <body>
@@ -103,9 +104,9 @@
             
             <p>9. You understand that upon initiating a transaction for availing the Services you are entering into a legally binding and enforceable contract with the Platform Owner for the Services.</p>
             <h2 id="refund-policy">Refund Policy</h2>
-            <p>Refunds are available only if the manufacturing process for the product has not yet commenced. Once the product enters the manufacturing phase, refunds will no longer be issued.If approved the refund will be credited into original method of payment within 10 days. To request a refund, please contact us via email at jayant@volt3dge.com.</p>
+            <p>Refunds are available only if the manufacturing process for the product has not yet commenced. Once the product enters the manufacturing phase, refunds will no longer be issued.If approved the refund will be credited into original method of payment within 10 days. To request a refund, please contact us via email at team@volt3dge.com.</p>
             <h2 id="return-policy">Return Policy</h2>
-            <p>No return.</p>
+            <p>Only available if a diffrent product had been delivered to you. For Custom Orders or Orders which require any kind of customization will not be viable for returns. For generating a return request email us at team@volt3dge.com </p>
             <h2 id="shipping-policy">Shipping Policy</h2>
             <p>Delivery Time would be approximately 7-10 days from the date of order placed for products.In case of Custom order necessary details would be shared via email.We use multiple delivery partners like Delhivery,Blue Dart, IndiaPost and DTDC. </p>
             <h2 id="indemnification">Indemnification</h2>
