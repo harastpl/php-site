@@ -154,6 +154,19 @@ function getProduct($id) {
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
+// Get product colors
+function getProductColors($productId) {
+    global $pdo;
+    $stmt = $pdo->prepare("
+        SELECT c.* FROM colors c 
+        JOIN product_colors pc ON c.id = pc.color_id 
+        WHERE pc.product_id = ? AND c.is_active = 1 
+        ORDER BY c.name
+    ");
+    $stmt->execute([$productId]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 // Get all colors
 function getColors() {
     global $pdo;

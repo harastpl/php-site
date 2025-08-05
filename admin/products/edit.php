@@ -8,7 +8,13 @@ requireAdmin();
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $product = getProduct($id);
 $categories = getCategories();
+$colors = getColors();
 $productImages = getProductImages($id);
+
+// Get product colors
+$stmt = $pdo->prepare("SELECT color_id FROM product_colors WHERE product_id = ?");
+$stmt->execute([$id]);
+$productColors = array_column($stmt->fetchAll(), 'color_id');
 
 if (!$product) {
     $_SESSION['error'] = 'Product not found.';
@@ -26,6 +32,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $low_stock_threshold = (int)$_POST['low_stock_threshold'];
     $category_id = (int)$_POST['category_id'];
     $is_featured = (int)$_POST['is_featured'];
+    $enable_colors = isset($_POST['enable_colors']) ? 1 : 0;
+    $selected_colors = isset($_POST['colors']) ? $_POST['colors'] : [];
     $images = $_FILES['images'];
     
     $errors = [];
@@ -118,8 +126,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
         if (empty($errors)) {
             try {
-                $stmt = $pdo->prepare("UPDATE products SET name = ?, description = ?, price = ?, delivery_charge = ?, delivery_charge_threshold = ?, delivery_charge_alt = ?, stock = ?, low_stock_threshold = ?, category_id = ?, is_featured = ? WHERE id = ?");
-                $stmt->execute([$name, $description, $price, $delivery_charge, $delivery_charge_threshold, $delivery_charge_alt, $stock, $low_stock_threshold, $category_id, $is_featured, $id]);
+                $stmt = $pdo->prepare("UPDATE products SET name = ?, description = ?, price = ?, delivery_charge = ?, delivery_charge_threshold = ?, delivery_charge_alt = ?, stock = ?, low_stock_threshold = ?, category_id = ?, is_featured = ?, enable_colors = ? WHERE id = ?");
+                $stmt->execute([$name, $description, $price, $delivery_charge, $delivery_charge_threshold, $delivery_charge_alt, $stock, $low_stock_threshold, $category_id, $is_featured, $enable_colors, $id]);
+                
+                // Update product colors
+                $stmt = $pdo->prepare("DELETE FROM product_colors WHERE product_id = ?");
+                $stmt->execute([$id]);
+                
+                if ($enable_colors && !empty($selected_colors)) {
+                    foreach ($selected_colors as $color_id) {
+                        $stmt = $pdo->prepare("INSERT INTO product_colors (product_id, color_id) VALUES (?, ?)");
+                        $stmt->execute([$id, $color_id]);
+                    }
+                }
                 
                 $_SESSION['success'] = 'Product updated successfully!';
                 redirect('index.php');
@@ -178,6 +197,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="enable_colors" name="enable_colors" <?php echo $product['enable_colors'] ? 'checked' : ''; ?>>
+                                            <label class="form-check-label" for="enable_colors">Enable Color Selection</label>
+                                        </div>
+                                        <div class="form-text">Allow customers to choose colors for this product</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
                                         <label for="category_id" class="form-label">Category</label>
                                         <select class="form-select" id="category_id" name="category_id" required>
                                             <option value="">Select Category</option>
@@ -198,6 +226,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                             <option value="1" <?php echo $product['is_featured'] ? 'selected' : ''; ?>>Yes</option>
                                         </select>
                                     </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3" id="color-selection" style="display: <?php echo $product['enable_colors'] ? 'block' : 'none'; ?>;">
+                                <label class="form-label">Available Colors</label>
+                                <div class="row">
+                                    <?php foreach ($colors as $color): ?>
+                                        <div class="col-md-3 mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="colors[]" value="<?php echo $color['id']; ?>" id="color_<?php echo $color['id']; ?>" <?php echo in_array($color['id'], $productColors) ? 'checked' : ''; ?>>
+                                                <label class="form-check-label d-flex align-items-center" for="color_<?php echo $color['id']; ?>">
+                                                    <span class="color-preview me-2" style="background-color: <?php echo $color['hex_code']; ?>; width: 20px; height: 20px; border-radius: 50%; border: 1px solid #ccc;"></span>
+                                                    <?php echo htmlspecialchars($color['name']); ?>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
                                 </div>
                             </div>
                             
@@ -280,5 +325,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('enable_colors').addEventListener('change', function() {
+            const colorSelection = document.getElementById('color-selection');
+            if (this.checked) {
+                colorSelection.style.display = 'block';
+            } else {
+                colorSelection.style.display = 'none';
+            }
+        });
+    </script>
 </body>
 </html>

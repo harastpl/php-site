@@ -157,6 +157,7 @@ if (isset($_SESSION['flash_message'])) {
                                 <?php if ($order['product_id']): ?>
                                     <p><strong>Product:</strong> <?php echo htmlspecialchars($order['product_name']); ?></p>
                                 <?php else: ?>
+                                    <p><strong>Print Type:</strong> <?php echo htmlspecialchars($order['print_type'] ?? 'FDM'); ?></p>
                                     <p><strong>Material:</strong> <?php echo htmlspecialchars($order['material_name']); ?></p>
                                     <p><strong>Color:</strong> <span class="color-preview" style="background-color:<?php echo $order['hex_code']; ?>"></span> <?php echo htmlspecialchars($order['color_name']); ?></p>
                                     <p><strong>Infill:</strong> <?php echo $order['infill_percentage']; ?>%</p>
@@ -184,18 +185,23 @@ if (isset($_SESSION['flash_message'])) {
                         
                         <?php if ($order['custom_stl']): ?>
                             <div class="mt-3">
-                                <p><strong>Design File:</strong> 
-                                    <a href="uploads/stl_files/<?php echo $order['custom_stl']; ?>" 
-                                       class="btn btn-sm btn-outline-primary" download>
-                                        <i class="fas fa-download"></i> Download File
+                                <p><strong>Design Files:</strong></p>
+                                <?php 
+                                $files = explode(',', $order['custom_stl']);
+                                foreach ($files as $file): 
+                                ?>
+                                    <a href="uploads/stl_files/<?php echo trim($file); ?>" 
+                                       class="btn btn-sm btn-outline-primary me-2 mb-2" download>
+                                        <i class="fas fa-download"></i> <?php echo htmlspecialchars(trim($file)); ?>
                                     </a>
+                                <?php endforeach; ?>
                                 </p>
                             </div>
                         <?php endif; ?>
                         
                         <?php if ($order['custom_notes']): ?>
                             <div class="mt-3">
-                                <p><strong>Notes:</strong></p>
+                                <p><strong>Additional Information:</strong></p>
                                 <p class="text-muted"><?php echo nl2br(htmlspecialchars($order['custom_notes'])); ?></p>
                             </div>
                         <?php endif; ?>

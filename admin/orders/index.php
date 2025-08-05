@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
 $stmt = $pdo->query("
     SELECT o.*, u.username, u.email, u.address,
            oi.product_id, oi.custom_stl, oi.custom_notes, oi.infill_percentage, oi.layer_height, 
-           oi.support_needed, oi.quantity, oi.custom_text, oi.custom_file_upload,
+           oi.support_needed, oi.quantity, oi.custom_text, oi.custom_file_upload, oi.print_type,
            c.name as color_name, CONCAT('#', c.hex_code) as hex_code,
            m.name as material_name,
            p.name as product_name, p.stl_file as product_stl_file
@@ -159,6 +159,7 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                         <?php endif; ?>
                                     <?php elseif ($order['custom_stl']): ?>
                                         <strong>Custom Order</strong><br>
+                                        <strong>Print Type:</strong> <?php echo htmlspecialchars($order['print_type'] ?? 'FDM'); ?><br>
                                     <?php endif; ?>
 
                                     <strong>Qty:</strong> <?php echo $order['quantity']; ?><br>
@@ -200,9 +201,38 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 </td>
                                 <td><?php echo date('M j, Y', strtotime($order['created_at'])); ?></td>
                                 <td>
+                                    <?php if (!empty($order['address'])): ?>
+                                        <?php 
+                                        $address = json_decode($order['address'], true);
+                                        if ($address): 
+                                        ?>
+                                            <div class="mb-2">
+                                                <small><strong>Address:</strong><br>
+                                                <?php echo htmlspecialchars($address['full_name']); ?><br>
+                                                <?php echo htmlspecialchars($address['address']); ?><br>
+                                                <?php echo htmlspecialchars($address['city'] . ', ' . $address['state'] . ' - ' . $address['pincode']); ?><br>
+                                                <strong>Phone:</strong> <?php echo htmlspecialchars($address['phone']); ?>
+                                                </small>
+                                            </div>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+                                    
+                                    <?php if ($order['custom_notes']): ?>
+                                        <div class="mb-2">
+                                            <small><strong>Additional Info:</strong><br>
+                                            <?php echo nl2br(htmlspecialchars($order['custom_notes'])); ?>
+                                            </small>
+                                        </div>
+                                    <?php endif; ?>
+                                    
                                     <?php if ($order['custom_stl']): ?>
-                                        <a href="../../uploads/stl_files/<?php echo htmlspecialchars($order['custom_stl']); ?>" 
-                                           class="btn btn-sm btn-outline-primary d-block mb-2" download>Download Custom STL</a>
+                                        <?php 
+                                        $files = explode(',', $order['custom_stl']);
+                                        foreach ($files as $file): 
+                                        ?>
+                                            <a href="../../uploads/stl_files/<?php echo htmlspecialchars(trim($file)); ?>" 
+                                               class="btn btn-sm btn-outline-primary d-block mb-1" download>Download <?php echo htmlspecialchars(trim($file)); ?></a>
+                                        <?php endforeach; ?>
                                     <?php elseif ($order['product_stl_file']): ?>
                                         <a href="../../uploads/stl_files/<?php echo htmlspecialchars($order['product_stl_file']); ?>" 
                                            class="btn btn-sm btn-outline-success d-block mb-2" download>Download Product STL</a>

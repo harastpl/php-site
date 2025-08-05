@@ -6,6 +6,7 @@ require_once '../../includes/auth.php';
 requireAdmin();
 
 $categories = getCategories();
+$colors = getColors();
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $name = trim($_POST['name']);
@@ -18,6 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $low_stock_threshold = (int)$_POST['low_stock_threshold'];
     $category_id = (int)$_POST['category_id'];
     $is_featured = (int)$_POST['is_featured'];
+    $enable_colors = isset($_POST['enable_colors']) ? 1 : 0;
+    $selected_colors = isset($_POST['colors']) ? $_POST['colors'] : [];
     $images = $_FILES['images'];
     $stl_file = $_FILES['stl_file'];
     
@@ -100,9 +103,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if (!empty($uploadedImages) && empty($errors)) {
             try {
                 // Insert product into database
-                $stmt = $pdo->prepare("INSERT INTO products (name, description, price, delivery_charge, delivery_charge_threshold, delivery_charge_alt, stock, low_stock_threshold, category_id, is_featured, image, stl_file) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$name, $description, $price, $delivery_charge, $delivery_charge_threshold, $delivery_charge_alt, $stock, $low_stock_threshold, $category_id, $is_featured, $uploadedImages[0]['file_name'], $stl_file_name]);
+                $stmt = $pdo->prepare("INSERT INTO products (name, description, price, delivery_charge, delivery_charge_threshold, delivery_charge_alt, stock, low_stock_threshold, category_id, is_featured, enable_colors, image, stl_file) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$name, $description, $price, $delivery_charge, $delivery_charge_threshold, $delivery_charge_alt, $stock, $low_stock_threshold, $category_id, $is_featured, $enable_colors, $uploadedImages[0]['file_name'], $stl_file_name]);
                 $product_id = $pdo->lastInsertId();
+                
+                // Insert product colors if enabled
+                if ($enable_colors && !empty($selected_colors)) {
+                    foreach ($selected_colors as $color_id) {
+                        $stmt = $pdo->prepare("INSERT INTO product_colors (product_id, color_id) VALUES (?, ?)");
+                        $stmt->execute([$product_id, $color_id]);
+                    }
+                }
                 
                 // Insert product images
                 foreach ($uploadedImages as $image) {
@@ -218,6 +229,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="enable_colors" name="enable_colors">
+                                    <label class="form-check-label" for="enable_colors">Enable Color Selection</label>
+                                </div>
+                                <div class="form-text">Allow customers to choose colors for this product</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
                                 <label for="is_featured" class="form-label">Featured Product</label>
                                 <select class="form-select" id="is_featured" name="is_featured">
                                     <option value="0">No</option>
@@ -228,6 +248,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         </div>
                     </div>
                     
+                    <div class="mb-3" id="color-selection" style="display: none;">
+                        <label class="form-label">Available Colors</label>
+                        <div class="row">
+                            <?php foreach ($colors as $color): ?>
+                                <div class="col-md-3 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="colors[]" value="<?php echo $color['id']; ?>" id="color_<?php echo $color['id']; ?>">
+                                        <label class="form-check-label d-flex align-items-center" for="color_<?php echo $color['id']; ?>">
+                                            <span class="color-preview me-2" style="background-color: <?php echo $color['hex_code']; ?>; width: 20px; height: 20px; border-radius: 50%; border: 1px solid #ccc;"></span>
+                                            <?php echo htmlspecialchars($color['name']); ?>
+                                        </label>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
                     <div class="mb-3">
                         <label for="images" class="form-label">Product Images</label>
                         <input type="file" class="form-control" id="images" name="images[]" multiple required>
@@ -248,5 +286,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('enable_colors').addEventListener('change', function() {
+            const colorSelection = document.getElementById('color-selection');
+            if (this.checked) {
+                colorSelection.style.display = 'block';
+            } else {
+                colorSelection.style.display = 'none';
+            }
+        });
+    </script>
 </body>
 </html>
