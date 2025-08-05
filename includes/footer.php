@@ -1,7 +1,7 @@
-</div> <footer class="footer mt-5">
-        <div class="container">
+</div> <footer class="footer mt-5" style="font-size: 0.8rem; padding: 10px 0;">
+        <div class="container" style="max-height: 50%;">
             <div class="row">
-                <div class="col-lg-3 col-md-6 mb-4">
+                <div class="col-lg-3 col-md-6 mb-2">
                     <img src="assets/images/logo.png" alt="Logo" class="logo">
                     <h5><?php echo defined('SITE_NAME') ? SITE_NAME : '3D Print Shop'; ?></h5>
                     <p>Professional 3D printing services with precision in every layer.</p>
@@ -27,9 +27,9 @@
 
                 </div>
             </div>
-            <hr style="border-color: #333;">
+            <hr style="border-color: #333; margin: 10px 0;">
             <div class="row">
-                <div class="col-12 text-center">
+                <div class="col-12 text-center" style="margin-bottom: 5px;">
                     <p>© <?php echo date('Y'); ?> <?php echo defined('SITE_NAME') ? SITE_NAME : '3D Print Shop'; ?>. All rights reserved.</p>
                 </div>
             </div>

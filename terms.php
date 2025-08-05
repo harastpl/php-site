@@ -3,32 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terms and Conditions | <?php echo defined('SITE_NAME') ? SITE_NAME : '3D Print Shop'; ?></title>
+    <title>Terms and Conditions | <?php echo defined('SITE_NAME') ? SITE_NAME : 'Volt3dge: Precision in Every Layer'; ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Serif:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="assets/css/styles.css" rel="stylesheet">
     <style>
-        .sidebar {
+        .hamburger {
+            display: block;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
             position: fixed;
-            top: 0;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+        }
+        .hamburger div {
+            width: 100%;
+            height: 4px;
+            background-color: #333;
+            margin: 5px 0;
+            transition: 0.4s;
+        }
+        .nav-links {
+            display: none;
+            position: fixed;
+            top: 60px;
             left: 0;
-            height: 100%;
-            width: 250px;
+            width: 100%;
             background-color: #f8f9fa;
             padding: 20px;
-            overflow-y: auto;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        .sidebar a {
+        .nav-links a {
             display: block;
             color: #000;
             padding: 10px;
             text-decoration: none;
         }
-        .sidebar a:hover {
+        .nav-links a:hover {
             background-color: #ddd;
         }
         .content {
-            margin-left: 270px;
             padding: 20px;
         }
         
@@ -37,13 +53,28 @@
 <body>
     <?php include 'includes/header.php'; ?>
 
-    <div class="sidebar">
-        <h2>Navigation</h2>
+    <div class="hamburger" onclick="toggleNav()">
+        <div></div>
+        <div></div>
+        <div></div>
+    </div>
+    <div class="nav-links">
         <a href="#terms-conditions">Terms & Conditions</a>
         <a href="#refund-Policy"> Refund Policy</a>
         <a href="#privacy-policy">Privacy Policy</a>
         <a href="#return-policy">Return Policy</a>
         <a href="#shipping-policy">Shipping Policy</a>
+    </div>
+    <script>
+        function toggleNav() {
+            const navLinks = document.querySelector('.nav-links');
+            if (navLinks.style.display === 'block') {
+                navLinks.style.display = 'none';
+            } else {
+                navLinks.style.display = 'block';
+            }
+        }
+    </script>
 
         <!-- <a href="#terms-of-service">Terms of Service</a>
         <a href="#indemnification">Indemnification</a>
