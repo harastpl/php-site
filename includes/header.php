@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo defined('SITE_NAME') ? SITE_NAME : '3D Print Shop'; ?></title>
+    <title><?php echo defined('SITE_NAME') ? SITE_NAME : ' Volt3dge: Precision in Every Layer'; ?></title>
     <link rel="icon" href="assets/images/favicon.ico" type="image/x-icon">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -15,7 +15,7 @@
         <div class="container">
             <a class="navbar-brand" href="index.php">
                 <img src="assets/images/logo.png" alt="Logo" height="40" class="d-inline-block align-top">
-                <?php echo defined('SITE_NAME') ? SITE_NAME : '3D Print Shop'; ?>
+                <?php echo defined('SITE_NAME') ? SITE_NAME : ' Volt3dge: Precision in Every Layer'; ?>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
