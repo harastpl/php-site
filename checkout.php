@@ -52,6 +52,7 @@ if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
                  $cart_items[] = [
                     'key' => $key,
                     'product' => $product,
+                    'color_id' => $item['color_id'],
                     'quantity' => $item['quantity'],
                     'subtotal' => $item_subtotal,
                     'custom_text' => $item['custom_text'],
@@ -84,6 +85,13 @@ if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
     }
 }
 
+// Get colors for display
+$colors = getColors();
+$colorMap = [];
+foreach ($colors as $color) {
+    $colorMap[$color['id']] = $color;
+}
+
 if (empty($cart_items)) {
     $_SESSION['error'] = 'No items to checkout.';
     redirect('cart.php');
@@ -108,8 +116,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
         foreach ($cart_items as $item) {
             $stmt = $pdo->prepare("
                 INSERT INTO order_items 
-                (order_id, product_id, quantity, price, custom_text, custom_file_upload) 
-                VALUES (?, ?, ?, ?, ?, ?)
+                (order_id, product_id, quantity, price, custom_text, custom_file_upload, color_id) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)
             ");
             $stmt->execute([
                 $order_id, 
@@ -117,7 +125,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
                 $item['quantity'], 
                 $item['product']['price'],
                 $item['custom_text'],
-                $item['custom_file']
+                $item['custom_file'],
+                $item['color_id']
             ]);
         }
         
@@ -199,6 +208,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
                                 <div class="flex-grow-1">
                                     <h6 class="mb-1"><?php echo htmlspecialchars($item['product']['name']); ?></h6>
                                     <small class="text-muted">Quantity: <?php echo $item['quantity']; ?></small>
+                                    <?php if ($item['color_id'] && isset($colorMap[$item['color_id']])): ?>
+                                        <br><small class="text-info">
+                                            Color: 
+                                            <span class="color-preview me-1" style="background-color: <?php echo $colorMap[$item['color_id']]['hex_code']; ?>; width: 12px; height: 12px; border-radius: 50%; border: 1px solid #ccc; display: inline-block;"></span>
+                                            <?php echo htmlspecialchars($colorMap[$item['color_id']]['name']); ?>
+                                        </small>
+                                    <?php endif; ?>
                                 </div>
                                 <div class="text-end">
                                     <div><?php echo formatCurrency($item['subtotal']); ?></div>
