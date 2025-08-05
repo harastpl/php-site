@@ -13,16 +13,17 @@ $errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $notes = trim($_POST['notes']);
+    $print_type = $_POST['print_type'];
     $infill = (int)$_POST['infill'];
     $layer_height = (float)$_POST['layer_height'];
     $support_needed = isset($_POST['support_needed']) ? 1 : 0;
     $color_id = (int)$_POST['color_id'];
     $material_id = (int)$_POST['material_id'];
     $quantity = (int)$_POST['quantity'];
-    $file = $_FILES['design_file'];
+    $files = $_FILES['design_file'];
     
     // Validate inputs
-    if ($file['error'] == UPLOAD_ERR_NO_FILE) {
+    if (empty($files['name'][0])) {
         $errors[] = 'Design file is required';
     }
     
@@ -47,9 +48,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
     
     if (empty($errors)) {
-        $uploadResult = uploadFile($file, ALLOWED_FILE_TYPES);
+        $uploadedFiles = [];
+        $allowedTypes = array_merge(ALLOWED_FILE_TYPES, ['txt']);
         
-        if ($uploadResult['success']) {
+        // Handle multiple file uploads
+        for ($i = 0; $i < count($files['name']); $i++) {
+            if ($files['error'][$i] == UPLOAD_ERR_OK) {
+                $file = [
+                    'name' => $files['name'][$i],
+                    'tmp_name' => $files['tmp_name'][$i],
+                    'size' => $files['size'][$i],
+                    'error' => $files['error'][$i]
+                ];
+                
+                $uploadResult = uploadFile($file, $allowedTypes);
+                if ($uploadResult['success']) {
+                    $uploadedFiles[] = $uploadResult['file_name'];
+                } else {
+                    $errors[] = 'File ' . $files['name'][$i] . ': ' . $uploadResult['message'];
+                }
+            }
+        }
+        
+        if (!empty($uploadedFiles) && empty($errors)) {
             try {
                 // Calculate estimated price (this would be refined based on actual file analysis)
                 // Set initial price to 0 for admin review
@@ -62,8 +83,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $orderId = $pdo->lastInsertId();
                 
                 // Create order item
-                $stmt = $pdo->prepare("INSERT INTO order_items (order_id, quantity, price, custom_stl, custom_notes, infill_percentage, layer_height, support_needed, color_id, material_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$orderId, $quantity, 0, $uploadResult['file_name'], $notes, $infill, $layer_height, $support_needed, $color_id, $material_id]);
+                $stmt = $pdo->prepare("INSERT INTO order_items (order_id, quantity, price, custom_stl, custom_notes, infill_percentage, layer_height, support_needed, color_id, material_id, print_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$orderId, $quantity, 0, implode(',', $uploadedFiles), $notes, $infill, $layer_height, $support_needed, $color_id, $material_id, $print_type]);
                 
                 // Send notification email
                 $colorName = '';
@@ -91,8 +112,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             } catch (PDOException $e) {
                 $errors[] = 'Database error: ' . $e->getMessage();
             }
-        } else {
-            $errors[] = $uploadResult['message'];
         }
     }
 }
@@ -169,12 +188,36 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 
                 <form method="post" enctype="multipart/form-data">
                     <div class="specification-card">
+                        <h4 class="mb-3">Print Technology</h4>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="print_type" id="fdm" value="FDM" checked onchange="updateMaterialOptions()">
+                                    <label class="form-check-label" for="fdm">
+                                        <strong>FDM (Fused Deposition Modeling)</strong><br>
+                                        <small class="text-muted">Standard 3D printing with filaments</small>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="print_type" id="sla" value="SLA" onchange="updateMaterialOptions()">
+                                    <label class="form-check-label" for="sla">
+                                        <strong>SLA (Stereolithography)</strong><br>
+                                        <small class="text-muted">High-resolution resin printing</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="specification-card">
                         <h4 class="mb-3">Upload Your Design</h4>
                         <div class="mb-3">
                             <label for="design_file" class="form-label">Design File *</label>
-                            <input type="file" class="form-control" id="design_file" name="design_file" 
-                                   accept=".stl,.3mf,.obj,.stp,.step" required>
-                            <div class="form-text">Supported formats: STL, 3MF, OBJ, STP, STEP (Max: 50MB)</div>
+                            <input type="file" class="form-control" id="design_file" name="design_file[]" 
+                                   accept=".stl,.3mf,.obj,.stp,.step,.txt" multiple required>
+                            <div class="form-text">Supported formats: STL, 3MF, OBJ, STP, STEP, TXT (Max: 50MB each). You can upload multiple files.</div>
                         </div>
                         
                         <div class="mb-3">
@@ -231,14 +274,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <div class="mb-3">
                             <label for="material_id" class="form-label">Material *</label>
                             <select class="form-select" id="material_id" name="material_id" required>
-                                <option value="">Select Material</option>
-                                <?php foreach ($materials as $material): ?>
-                                    <option value="<?php echo $material['id']; ?>" 
-                                            <?php echo (stripos($material['name'], 'pla') !== false) ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($material['name']); ?> 
-                                        (<?php echo htmlspecialchars($material['description']); ?>)
-                                    </option>
-                                <?php endforeach; ?>
+                                <!-- Options will be populated by JavaScript -->
                             </select>
                             <div class="form-text">PLA is recommended for beginners</div>
                         </div>
@@ -299,6 +335,46 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Check the corresponding radio button
             element.parentElement.querySelector('input[type="radio"]').checked = true;
         }
+        
+        function updateMaterialOptions() {
+            const printType = document.querySelector('input[name="print_type"]:checked').value;
+            const materialSelect = document.getElementById('material_id');
+            
+            // Clear existing options
+            materialSelect.innerHTML = '<option value="">Select Material</option>';
+            
+            <?php foreach ($materials as $material): ?>
+                const material<?php echo $material['id']; ?> = {
+                    id: <?php echo $material['id']; ?>,
+                    name: '<?php echo addslashes($material['name']); ?>',
+                    description: '<?php echo addslashes($material['description']); ?>',
+                    isResin: <?php echo (stripos($material['name'], 'resin') !== false) ? 'true' : 'false'; ?>
+                };
+                
+                if (printType === 'SLA' && material<?php echo $material['id']; ?>.isResin) {
+                    const option = document.createElement('option');
+                    option.value = material<?php echo $material['id']; ?>.id;
+                    option.textContent = material<?php echo $material['id']; ?>.name + ' (' + material<?php echo $material['id']; ?>.description + ')';
+                    option.selected = true;
+                    materialSelect.appendChild(option);
+                    materialSelect.disabled = true;
+                } else if (printType === 'FDM' && !material<?php echo $material['id']; ?>.isResin) {
+                    const option = document.createElement('option');
+                    option.value = material<?php echo $material['id']; ?>.id;
+                    option.textContent = material<?php echo $material['id']; ?>.name + ' (' + material<?php echo $material['id']; ?>.description + ')';
+                    if (material<?php echo $material['id']; ?>.name.toLowerCase().includes('pla')) {
+                        option.selected = true;
+                    }
+                    materialSelect.appendChild(option);
+                    materialSelect.disabled = false;
+                }
+            <?php endforeach; ?>
+        }
+        
+        // Initialize material options on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateMaterialOptions();
+        });
     </script>
 </body>
 </html>

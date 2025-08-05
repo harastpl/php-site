@@ -16,6 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // ACTION: Add to Cart or Buy Now
     if (isset($_POST['add_to_cart']) || isset($_POST['buy_now'])) {
         $product_id = (int)$_POST['product_id'];
+        $color_id = isset($_POST['color_id']) ? (int)$_POST['color_id'] : null;
         $quantity = (int)$_POST['quantity'];
         $custom_text = isset($_POST['custom_text']) ? trim($_POST['custom_text']) : null;
         $custom_file = $_FILES['custom_file'] ?? null;
@@ -32,13 +33,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $custom_file_name = $file_name;
         }
         
-        $cart_item_key = md5($product_id . ($custom_text ?? '') . ($custom_file_name ?? ''));
+        $cart_item_key = md5($product_id . ($color_id ?? '') . ($custom_text ?? '') . ($custom_file_name ?? ''));
 
         if (isset($_SESSION['cart'][$cart_item_key])) {
             $_SESSION['cart'][$cart_item_key]['quantity'] += $quantity;
         } else {
             $_SESSION['cart'][$cart_item_key] = [
                 'product_id' => $product_id,
+                'color_id' => $color_id,
                 'quantity' => $quantity,
                 'custom_text' => $custom_text,
                 'custom_file' => $custom_file_name
@@ -107,6 +109,7 @@ if (!empty($_SESSION['cart'])) {
                 $cart_items[] = [
                     'key' => $key,
                     'product' => $product,
+                    'color_id' => $item['color_id'],
                     'quantity' => $item['quantity'],
                     'subtotal' => $subtotal,
                     'custom_text' => $item['custom_text'],
@@ -116,6 +119,14 @@ if (!empty($_SESSION['cart'])) {
         }
     }
 }
+
+// Get colors for display
+$colors = getColors();
+$colorMap = [];
+foreach ($colors as $color) {
+    $colorMap[$color['id']] = $color;
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -160,6 +171,13 @@ if (!empty($_SESSION['cart'])) {
                                     <div class="col-md-4">
                                         <h5><?php echo htmlspecialchars($item['product']['name']); ?></h5>
                                         <p class="text-muted mb-1"><?php echo formatCurrency($item['product']['price']); ?> each</p>
+                                        <?php if ($item['color_id'] && isset($colorMap[$item['color_id']])): ?>
+                                            <small class="d-block text-info">
+                                                <strong>Color:</strong> 
+                                                <span class="color-preview me-1" style="background-color: <?php echo $colorMap[$item['color_id']]['hex_code']; ?>; width: 12px; height: 12px; border-radius: 50%; border: 1px solid #ccc; display: inline-block;"></span>
+                                                <?php echo htmlspecialchars($colorMap[$item['color_id']]['name']); ?>
+                                            </small>
+                                        <?php endif; ?>
                                         <?php if ($item['custom_text']): ?>
                                             <small class="d-block text-info"><strong>Note:</strong> <?php echo nl2br(htmlspecialchars($item['custom_text'])); ?></small>
                                         <?php endif; ?>

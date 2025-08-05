@@ -84,6 +84,28 @@ function sendOTPEmail($email, $otp, $type = 'registration') {
 
 // Send order confirmation email
 function sendOrderConfirmationEmail($email, $order_id, $order_details) {
+    global $pdo;
+    
+    // Get user address and phone
+    $stmt = $pdo->prepare("SELECT u.address, u.phone FROM orders o LEFT JOIN users u ON o.user_id = u.id WHERE o.id = ?");
+    $stmt->execute([$order_id]);
+    $user_data = $stmt->fetch();
+    
+    $address_html = '';
+    if (!empty($user_data['address'])) {
+        $address = json_decode($user_data['address'], true);
+        if ($address) {
+            $address_html = '
+                <div class="order-box">
+                    <h3>Delivery Address</h3>
+                    <p><strong>Name:</strong> ' . htmlspecialchars($address['full_name']) . '</p>
+                    <p><strong>Address:</strong> ' . htmlspecialchars($address['address']) . '</p>
+                    <p><strong>City:</strong> ' . htmlspecialchars($address['city'] . ', ' . $address['state'] . ' - ' . $address['pincode']) . '</p>
+                    <p><strong>Phone:</strong> ' . htmlspecialchars($address['phone']) . '</p>
+                </div>';
+        }
+    }
+    
     $subject = 'Order Confirmation #' . $order_id . ' - Volt3dge';
     
     $message = '
@@ -116,6 +138,8 @@ function sendOrderConfirmationEmail($email, $order_id, $order_details) {
                     <p><strong>Order Date:</strong> ' . date('M j, Y g:i A') . '</p>
                 </div>
                 
+                ' . $address_html . '
+                
                 <p>You can track your order status by logging into your account.</p>
             </div>
             <div class="footer">
@@ -134,6 +158,28 @@ function sendOrderConfirmationEmail($email, $order_id, $order_details) {
 
 // Send payment confirmation email
 function sendPaymentConfirmationEmail($email, $order_id, $amount) {
+    global $pdo;
+    
+    // Get user address and phone
+    $stmt = $pdo->prepare("SELECT u.address, u.phone FROM orders o LEFT JOIN users u ON o.user_id = u.id WHERE o.id = ?");
+    $stmt->execute([$order_id]);
+    $user_data = $stmt->fetch();
+    
+    $address_html = '';
+    if (!empty($user_data['address'])) {
+        $address = json_decode($user_data['address'], true);
+        if ($address) {
+            $address_html = '
+                <div class="payment-box">
+                    <h3>Delivery Address</h3>
+                    <p><strong>Name:</strong> ' . htmlspecialchars($address['full_name']) . '</p>
+                    <p><strong>Address:</strong> ' . htmlspecialchars($address['address']) . '</p>
+                    <p><strong>City:</strong> ' . htmlspecialchars($address['city'] . ', ' . $address['state'] . ' - ' . $address['pincode']) . '</p>
+                    <p><strong>Phone:</strong> ' . htmlspecialchars($address['phone']) . '</p>
+                </div>';
+        }
+    }
+    
     $subject = 'Payment Confirmed #' . $order_id . ' - Volt3dge';
     
     $message = '
@@ -164,6 +210,8 @@ function sendPaymentConfirmationEmail($email, $order_id, $amount) {
                     <p><strong>Payment Date:</strong> ' . date('M j, Y g:i A') . '</p>
                     <p><strong>Status:</strong> Paid</p>
                 </div>
+                
+                ' . $address_html . '
                 
                 <p>Your order is now being processed and will be shipped soon.</p>
             </div>

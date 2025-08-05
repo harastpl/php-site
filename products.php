@@ -25,14 +25,55 @@ $categories = getCategories();
 </head>
 <body>
     <?php include 'includes/header.php'; ?>
+    
+    <!-- Mobile Header -->
+    <div class="mobile-only">
+        <div class="mobile-header">
+            <button class="back-btn" onclick="history.back()">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <div class="search-bar">
+                <input type="text" placeholder="Search products..." id="mobile-search" onclick="toggleMobileFilters()">
+            </div>
+            <button class="cart-btn" onclick="window.location.href='cart.php'">
+                <i class="fas fa-shopping-cart"></i>
+            </button>
+        </div>
+        
+        <div class="mobile-search-filters" id="mobile-filters">
+            <form method="GET" class="row g-2">
+                <div class="col-6">
+                    <select class="form-select form-select-sm" name="category">
+                        <option value="">All Categories</option>
+                        <?php foreach ($categories as $category): ?>
+                            <option value="<?php echo $category['id']; ?>" 
+                                    <?php echo $categoryId == $category['id'] ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($category['name']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-6">
+                    <select class="form-select form-select-sm" name="sort">
+                        <option value="created_at" <?php echo $sortBy == 'created_at' ? 'selected' : ''; ?>>Date Added</option>
+                        <option value="name" <?php echo $sortBy == 'name' ? 'selected' : ''; ?>>Name</option>
+                        <option value="price" <?php echo $sortBy == 'price' ? 'selected' : ''; ?>>Price</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary btn-sm w-100">Apply Filters</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <main class="container mt-5 mb-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-4 desktop-only">
             <h2>All Products</h2>
             <a href="custom-order.php" class="btn btn-primary">Custom Order</a>
         </div>
 
-        <div class="search-filter-section">
+        <div class="search-filter-section desktop-only">
             <form method="GET" class="row g-3">
                 <div class="col-md-4">
                     <input type="text" class="form-control search-input" name="search" 
@@ -75,7 +116,8 @@ $categories = getCategories();
                 <a href="custom-order.php" class="btn btn-primary">Place Custom Order</a>
             </div>
         <?php else: ?>
-            <div class="product-grid">
+            <!-- Desktop Product Grid -->
+            <div class="product-grid desktop-only">
                 <?php foreach ($products as $product): ?>
                     <?php 
                         $galleryImages = !empty($product['image_gallery']) ? explode(',', $product['image_gallery']) : [$product['image']];
@@ -114,9 +156,61 @@ $categories = getCategories();
                 </div>
                 <?php endforeach; ?>
             </div>
+            
+            <!-- Mobile Product List -->
+            <div class="mobile-only">
+                <?php foreach ($products as $product): ?>
+                    <?php 
+                        $galleryImages = !empty($product['image_gallery']) ? explode(',', $product['image_gallery']) : [$product['image']];
+                        $primaryImage = $galleryImages[0];
+                    ?>
+                    <div class="mobile-product-card" onclick="window.location.href='product.php?id=<?php echo $product['id']; ?>'">
+                        <div class="product-image">
+                            <img src="uploads/products/<?php echo htmlspecialchars($primaryImage); ?>" 
+                                 alt="<?php echo htmlspecialchars($product['name']); ?>">
+                        </div>
+                        <div class="product-info">
+                            <div class="product-name"><?php echo htmlspecialchars($product['name']); ?></div>
+                            <?php if ($product['category_name']): ?>
+                                <div class="product-category"><?php echo htmlspecialchars($product['category_name']); ?></div>
+                            <?php endif; ?>
+                            <div class="product-price"><?php echo formatCurrency($product['price']); ?></div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
         <?php endif; ?>
     </main>
+    
+    <!-- Mobile Bottom Navigation -->
+    <div class="mobile-only">
+        <div class="mobile-bottom-nav">
+            <a href="index.php">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+            <a href="products.php" class="active">
+                <i class="fas fa-box"></i>
+                <span>Products</span>
+            </a>
+            <a href="orders.php">
+                <i class="fas fa-user"></i>
+                <span>Account</span>
+            </a>
+            <a href="cart.php">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Cart</span>
+            </a>
+        </div>
+    </div>
 
     <?php include 'includes/footer.php'; ?>
+    
+    <script>
+        function toggleMobileFilters() {
+            const filters = document.getElementById('mobile-filters');
+            filters.classList.toggle('show');
+        }
+    </script>
 </body>
 </html>

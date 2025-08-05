@@ -8,25 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Serif:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="assets/css/styles.css" rel="stylesheet">
     <style>
-        .hamburger {
-            display: block;
-            cursor: pointer;
-            width: 30px;
-            height: 30px;
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 1000;
-        }
-        .hamburger div {
-            width: 100%;
-            height: 4px;
-            background-color: #333;
-            margin: 5px 0;
-            transition: 0.4s;
-        }
-        .nav-links {
-            display: none;
+        .sidebar {
             position: fixed;
             top: 60px;
             left: 0;
