@@ -12,7 +12,8 @@
 </head>
 <body>
 
-    <nav class="navbar navbar-expand-lg d-none d-lg-flex">
+    <!-- Desktop Header -->
+    <nav class="navbar navbar-expand-lg desktop-only">
         <div class="container">
             <a class="navbar-brand" href="index.php">
                 <img src="assets/images/logo.png" alt="Logo" height="40" class="d-inline-block align-top">
@@ -39,21 +40,22 @@
         </div>
     </nav>
 
-<nav class="navbar navbar-dark d-lg-none" style="background-color: #008BFF;">
-    <div class="container position-relative">
-
-        <a class="navbar-brand" href="index.php">
-            <img src="assets/images/logo.png" alt="Logo" height="40">
-        </a>
-
-        <a href="index.php" class="text-decoration-none position-absolute top-50 start-50 translate-middle">
-            <div class="text-center">
-                <h1 class="mb-0 fs-4 text-white">Volt3dge</h1>
-                <p class="small mb-0" style="color: rgba(255, 255, 255, 0.75);">Precision in every layer</p>
+    <!-- Mobile Header -->
+    <nav class="navbar navbar-dark mobile-only" style="background-color: #008BFF;">
+        <div class="container">
+            <div class="w-100 d-flex align-items-center">
+                <a href="index.php" class="d-inline-flex align-items-center me-2 text-decoration-none">
+                    <img src="assets/images/logo.png" alt="Volt3dge logo" style="height: 36px;">
+                </a>
+                <div class="flex-grow-1 text-center">
+                    <a href="index.php" class="text-decoration-none">
+                        <div class="h5 mb-0 text-white fw-bold">Volt3dge</div>
+                        <div class="small text-white-50">Precision in every layer</div>
+                    </a>
+                </div>
+                <div style="width: 44px;"></div>
             </div>
-        </a>
+        </div>
+    </nav>
 
-    </div>
-</nav>
-
-    <div class="container mt-4">
+    <div class="container <?php echo (basename($_SERVER['SCRIPT_NAME']) === 'index.php') ? '' : 'mt-2 mt-md-4'; ?>" style="<?php echo (basename($_SERVER['SCRIPT_NAME']) === 'index.php') ? 'margin-top:7px;' : ''; ?>">

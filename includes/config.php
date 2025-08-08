@@ -31,11 +31,10 @@ define('PHONEPE_CLIENT_SECRET', ''); // Paste the Client Secret that matches the
 
 // =================================================================
 
-// Pricing Configuration
-define('BASE_PRICE_PER_GRAM', 2.50);
-define('SETUP_FEE', 50.00);
+//
+//
 
-// Display Errors
+//
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -50,4 +49,5 @@ if (!file_exists(PRODUCT_IMAGE_DIR)) {
 if (!file_exists(ORDER_ATTACHMENT_DIR)) {
     mkdir(ORDER_ATTACHMENT_DIR, 0755, true);
 }
-?>
+
+//

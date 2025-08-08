@@ -18,11 +18,11 @@ $products = getFeaturedProducts(); // Get all featured products
     <?php include 'includes/header.php'; ?>
 
     <main class="container mt-5 ">
-        <section class="hero mb-5 rounded-4">
+        <section class="hero mb-5 rounded-4" style="padding: 16px 12px; margin-bottom: 5px; min-height: 240px;"">
             <div class="row">
                 <div class="col-md-6">
-                    <h1 style="size:28px">Custom 3D Printing Services</h1>
-                    <p class="lead" style="size:18px">High-quality 3D prints from your designs or ours.</p>
+                    <h1 style="size:22px">Custom 3D Printing Services</h1>
+                    <p class="lead" style="size:14px">High-quality 3D prints from your designs or ours.</p>
                     <a href="custom-order.php" class="btn btn-primary btn-lg">Upload Your STL File</a>
                 </div>
                 <div class="col-md-6">

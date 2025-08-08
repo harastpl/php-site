@@ -164,9 +164,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
         <h2 class="mb-4">Checkout</h2>
         
         <?php if (isset($_SESSION['error'])): ?>
-            <div class="alert alert-danger">
-                <?php echo $_SESSION['error']; unset($_SESSION['error']); ?>
-            </div>
+            <?php 
+                $error = $_SESSION['error'];
+                $suppress = (function_exists('isLoggedIn') && isLoggedIn() && stripos($error, 'log in to access this page') !== false);
+            ?>
+            <?php if (!$suppress): ?>
+                <div class="alert alert-danger">
+                    <?php echo $error; ?>
+                </div>
+            <?php endif; ?>
+            <?php unset($_SESSION['error']); ?>
         <?php endif; ?>
 
         <div class="row">
