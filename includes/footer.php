@@ -1,40 +1,38 @@
-</div> <footer class="footer mt-5">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <img src="assets/images/logo.png" alt="Logo" class="logo">
-                    <h5><?php echo defined('SITE_NAME') ? SITE_NAME : '3D Print Shop'; ?></h5>
-                    <p>Professional 3D printing services with precision in every layer.</p>
-                </div>
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <h5>Services</h5>
-                    <p><a href="custom-order.php">Custom 3D Printing</a></p>
-                    <p><a href="products.php">Ready-made Products</a></p>
-                    <p><a href="index.php">Design Consultation</a></p>
-                    <p><a href="terms.php">Terms & Conditions</a></p>
-                </div>
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <h5>Contact Info</h5>
-                    <p><strong>Email:</strong> <a href="mailto:team@volt3dge.com">team@volt3dge.com</a></p>
-                    <p><strong>Website:</strong> <a href="https://volt3dge.com" target="_blank">www.volt3dge.com</a></p>
-                                        <p><a href ="contact.php">Contact US</a><p>
-
-                </div>
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <h5>Socials</h5>
-                    <a href="https://www.instagram.com/volt3dge/" target="_blank" class="fs-4 me-3"><i class="fab fa-instagram"></i></a>
-                    <a href="https://www.youtube.com/@volt3dge" target="_blank" class="fs-4"><i class="fab fa-youtube"></i></a>
-
-                </div>
+</div> 
+<footer class="footer mt-5" style="font-size: 0.8rem; padding: 10px 0;">
+    <div class="container" style="max-height: 50%;">
+        <div class="row">
+            <div class="col-lg-3 col-md-6 mb-2">
+                <img src="assets/images/logo.png" alt="Logo" class="logo">
+                <h5><?php echo defined('SITE_NAME') ? SITE_NAME : '3D Print Shop'; ?></h5>
+                <p>Professional 3D printing services with precision in every layer.</p>
             </div>
-            <hr style="border-color: #333;">
-            <div class="row">
-                <div class="col-12 text-center">
-                    <p>© <?php echo date('Y'); ?> <?php echo defined('SITE_NAME') ? SITE_NAME : '3D Print Shop'; ?>. All rights reserved.</p>
-                </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <h5>Services</h5>
+                <p><a href="custom-order.php">Custom 3D Printing</a></p>
+                <p><a href="products.php">Ready-made Products</a></p>
+                <p><a href="index.php">Design Consultation</a></p>
+                <p><a href="terms.php">Terms & Conditions</a></p>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <h5>Contact Info</h5>
+                <p><strong>Email:</strong> <a href="mailto:team@volt3dge.com">team@volt3dge.com</a></p>
+                <p><strong>Website:</strong> <a href="https://volt3dge.com" target="_blank">www.volt3dge.com</a></p>
+                <p><a href ="contact.php">Contact US</a><p>
+
+                <h5>Socials</h5>
+                <a href="https://www.instagram.com/volt3dge/" target="_blank" class="fs-4 me-3"><i class="fab fa-instagram"></i></a>
+                <a href="https://www.youtube.com/@volt3dge" target="_blank" class="fs-4"><i class="fab fa-youtube"></i></a>
             </div>
         </div>
-    </footer>
+        <hr style="border-color: #333; margin: 1px 0;">
+        <div class="row">
+            <div class="col-12 text-center" style="margin-bottom: 2px;">
+                <p>© <?php echo date('Y'); ?> <?php echo defined('SITE_NAME') ? SITE_NAME : '3D Print Shop'; ?>. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 

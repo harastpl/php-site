@@ -8,7 +8,25 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Serif:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="assets/css/styles.css" rel="stylesheet">
     <style>
-        .sidebar {
+        .hamburger {
+            display: block;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+        }
+        .hamburger div {
+            width: 30px;
+            height: 4px;
+            background-color: #333;
+            margin: 5px 0;
+            transition: 0.4s;
+        }
+        .nav-links {
+            display: none;
             position: fixed;
             top: 60px;
             left: 0;
@@ -221,8 +239,8 @@
                 Proprietor<br>
                 Volt3dge, 20, Ambika Nagar, Indore</p>
                 
-                <p><strong>Contact us:</strong> jayant@volt3dge.com<br>
-                <strong>Phone:</strong> <br>
+                <p><strong>Contact us:</strong><a href="mailto:team@volt3dge.com"> team@volt3dge.com</a><br>
+                <strong>Phone:</strong> +91 7828900162 <br>
                 <strong>Time:</strong> Monday - Friday (9:00 - 16:00)</p>
                             
                             <div class="mt-4">
@@ -234,7 +252,27 @@
             </div>
         </div>
     </main>
-
+    <!-- Mobile Bottom Navigation -->
+    <div class="mobile-only">
+        <div class="mobile-bottom-nav">
+            <a href="index.php">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+            <a href="products.php">
+                <i class="fas fa-box"></i>
+                <span>Products</span>
+            </a>
+            <a href="orders.php">
+                <i class="fas fa-user"></i>
+                <span>Account</span>
+            </a>
+            <a href="cart.php">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Cart</span>
+            </a>
+        </div>
+    </div>
     <?php include 'includes/footer.php'; ?>
 </body>
 </html>

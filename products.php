@@ -24,7 +24,9 @@ $categories = getCategories();
     <link href="assets/css/styles.css" rel="stylesheet">
 </head>
 <body>
-    <?php include 'includes/header.php'; ?>
+        
+            <?php include 'includes/header.php'; ?>
+        
     
     <!-- Mobile Header -->
     <div class="mobile-only">

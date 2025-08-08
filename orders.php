@@ -220,6 +220,26 @@ if (isset($_SESSION['flash_message'])) {
             <?php endforeach; ?>
         <?php endif; ?>
     </main>
+<div class="mobile-only">
+        <div class="mobile-bottom-nav">
+            <a href="index.php">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+            <a href="products.php" class="active">
+                <i class="fas fa-box"></i>
+                <span>Products</span>
+            </a>
+            <a href="orders.php">
+                <i class="fas fa-user"></i>
+                <span>Account</span>
+            </a>
+            <a href="cart.php">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Cart</span>
+            </a>
+        </div>
+    </div>
 
     <?php include 'includes/footer.php'; ?>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

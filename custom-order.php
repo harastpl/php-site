@@ -216,8 +216,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <div class="mb-3">
                             <label for="design_file" class="form-label">Design File *</label>
                             <input type="file" class="form-control" id="design_file" name="design_file[]" 
-                                   accept=".stl,.3mf,.obj,.stp,.step,.txt" multiple required>
-                            <div class="form-text">Supported formats: STL, 3MF, OBJ, STP, STEP, TXT (Max: 50MB each). You can upload multiple files.</div>
+                                   accept=".stl,.3mf,.obj,.stp,.step,.zip,.rar,.7z" multiple required>
+                            <div class="form-text">Supported formats: STL, 3MF, OBJ, STP, STEP, ZIP (Max: 50MB each). You can upload multiple files.</div>
                         </div>
                         
                         <div class="mb-3">

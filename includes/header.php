@@ -11,15 +11,13 @@
     <link href="assets/css/styles.css" rel="stylesheet">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg">
+
+    <nav class="navbar navbar-expand-lg d-none d-lg-flex">
         <div class="container">
             <a class="navbar-brand" href="index.php">
                 <img src="assets/images/logo.png" alt="Logo" height="40" class="d-inline-block align-top">
-                <?php echo defined('SITE_NAME') ? SITE_NAME : ' Volt3dge: Precision in Every Layer'; ?>
+                <?php echo defined('SITE_NAME') ? SITE_NAME : ' Volt3dge'; ?>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item"><a class="nav-link" href="index.php">Home</a></li>
@@ -31,7 +29,7 @@
                         <?php if (function_exists('isAdmin') && isAdmin()): ?>
                             <li class="nav-item"><a class="nav-link" href="admin/">Admin Panel</a></li>
                         <?php endif; ?>
-                        <li class="nav-item"><a class="nav-link" href="logout.php">Logout </a></li>
+                        <li class="nav-item"><a class="nav-link" href="logout.php">Logout</a></li>
                     <?php else: ?>
                         <li class="nav-item"><a class="nav-link" href="login.php">Login</a></li>
                         <li class="nav-item"><a class="nav-link" href="register.php">Register</a></li>
@@ -40,4 +38,22 @@
             </div>
         </div>
     </nav>
+
+<nav class="navbar navbar-dark d-lg-none" style="background-color: #008BFF;">
+    <div class="container position-relative">
+
+        <a class="navbar-brand" href="index.php">
+            <img src="assets/images/logo.png" alt="Logo" height="40">
+        </a>
+
+        <a href="index.php" class="text-decoration-none position-absolute top-50 start-50 translate-middle">
+            <div class="text-center">
+                <h1 class="mb-0 fs-4 text-white">Volt3dge</h1>
+                <p class="small mb-0" style="color: rgba(255, 255, 255, 0.75);">Precision in every layer</p>
+            </div>
+        </a>
+
+    </div>
+</nav>
+
     <div class="container mt-4">

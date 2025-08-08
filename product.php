@@ -6,25 +6,11 @@ require_once 'includes/auth.php';
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $product = getProduct($id);
 $productImages = getProductImages($id);
-$productColors = getProductColors($id);
 
 if (!$product) {
     $_SESSION['error'] = 'Product not found.';
     header("Location: products.php");
     exit();
-}
-
-function selectColor(element) {
-    // Remove selected class from all color options
-    document.querySelectorAll('.color-option').forEach(option => {
-        option.classList.remove('selected');
-    });
-    
-    // Add selected class to clicked option
-    element.classList.add('selected');
-    
-    // Check the corresponding radio button
-    element.parentElement.querySelector('input[type="radio"]').checked = true;
 }
 ?>
 <!DOCTYPE html>
@@ -39,21 +25,6 @@ function selectColor(element) {
 </head>
 <body>
     <?php include 'includes/header.php'; ?>
-    
-    <!-- Mobile Header -->
-    <div class="mobile-only">
-        <div class="mobile-header">
-            <button class="back-btn" onclick="history.back()">
-                <i class="fas fa-arrow-left"></i>
-            </button>
-            <div class="search-bar">
-                <input type="text" placeholder="Search products..." readonly onclick="window.location.href='products.php'">
-            </div>
-            <button class="cart-btn" onclick="window.location.href='cart.php'">
-                <i class="fas fa-shopping-cart"></i>
-            </button>
-        </div>
-    </div>
 
     <main class="container mt-5 mb-5">
         <div class="row">
@@ -82,8 +53,8 @@ function selectColor(element) {
                 </div>
             </div>
             <div class="col-md-6">
-                <h1><?php echo htmlspecialchars($product['name']); ?></h1>
-                <p class="lead"><?php echo nl2br(htmlspecialchars($product['description'])); ?></p>
+                <h1 style="font-size: 24px; padding:2px;"><?php echo htmlspecialchars($product['name']); ?></h1>
+                <p class="lead" style="font-size: 14px;"><?php echo nl2br(htmlspecialchars($product['description'])); ?></p>
                 
                 <div class="mb-3">
                     <span class="price"><?php echo formatCurrency($product['price']); ?></span>
@@ -98,29 +69,10 @@ function selectColor(element) {
                 <?php if ($product['stock'] > 0): ?>
                     <form method="post" action="cart.php" enctype="multipart/form-data" class="mb-3">
                         <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>">
-                        
-                        <?php if ($product['enable_colors'] && !empty($productColors)): ?>
-                            <div class="mb-3">
-                                <label class="form-label">Color *</label>
-                                <div class="color-selection">
-                                    <?php foreach ($productColors as $index => $color): ?>
-                                        <label class="color-option-label">
-                                            <input type="radio" name="color_id" value="<?php echo $color['id']; ?>" 
-                                                   style="display: none;" required <?php echo (strtolower($color['name']) == 'white' || $index == 0) ? 'checked' : ''; ?>>
-                                            <div class="color-option <?php echo (strtolower($color['name']) == 'white' || $index == 0) ? 'selected' : ''; ?>" 
-                                                 style="background-color: <?php echo $color['hex_code']; ?>"
-                                                 title="<?php echo htmlspecialchars($color['name']); ?>"
-                                                 onclick="selectColor(this)"></div>
-                                        </label>
-                                    <?php endforeach; ?>
-                                </div>
-                                <div class="form-text">Click to select color</div>
-                            </div>
-                        <?php endif; ?>
 
                         <?php if ($product['enable_text_field']): ?>
                             <div class="mb-3">
-                                <label for="custom_text" class="form-label"><?php echo htmlspecialchars($product['text_field_label']); ?><?php echo $product['text_field_required'] ? ' *' : ''; ?></label>
+                                <label for="custom_text" class="form-label" ><?php echo htmlspecialchars($product['text_field_label']); ?><?php echo $product['text_field_required'] ? ' *' : ''; ?></label>
                                 <textarea class="form-control" id="custom_text" name="custom_text" <?php echo $product['text_field_required'] ? 'required' : ''; ?>></textarea>
                             </div>
                         <?php endif; ?>
@@ -131,8 +83,8 @@ function selectColor(element) {
                                 <input type="file" class="form-control" id="custom_file" name="custom_file" <?php echo $product['file_upload_required'] ? 'required' : ''; ?>>
                             </div>
                         <?php endif; ?>
-                        <div class="row align-items-end">
-                            <div class="col-md-4">
+                        <div class="row align-items-end" style="padding:4px;">
+                            <div class="col-md-4" >
                                 <label for="quantity" class="form-label">Quantity</label>
                                 <input type="number" class="form-control" id="quantity" name="quantity" 
                                        min="1" max="<?php echo $product['stock']; ?>" value="1" required>
@@ -159,28 +111,26 @@ function selectColor(element) {
             </div>
         </div>
     </main>
-   
-   <!-- Mobile Bottom Navigation -->
-   <div class="mobile-only">
-       <div class="mobile-bottom-nav">
-           <a href="index.php">
-               <i class="fas fa-home"></i>
-               <span>Home</span>
-           </a>
-           <a href="products.php">
-               <i class="fas fa-box"></i>
-               <span>Products</span>
-           </a>
-           <a href="orders.php">
-               <i class="fas fa-user"></i>
-               <span>Account</span>
-           </a>
-           <a href="cart.php">
-               <i class="fas fa-shopping-cart"></i>
-               <span>Cart</span>
-           </a>
-       </div>
-   </div>
+<div class="mobile-only">
+        <div class="mobile-bottom-nav">
+            <a href="index.php">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+            <a href="products.php" >
+                <i class="fas fa-box"></i>
+                <span>Products</span>
+            </a>
+            <a href="orders.php">
+                <i class="fas fa-user"></i>
+                <span>Account</span>
+            </a>
+            <a href="cart.php">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Cart</span>
+            </a>
+        </div>
+    </div>
 
     <?php include 'includes/footer.php'; ?>
 
